@@ -308,66 +308,7 @@ def render_chart(df, symbol, target_val, sl_val):
     fig.update_yaxes(gridcolor='#1e2638', fixedrange=True, range=[10, 90], row=3, col=1)
     fig.update_xaxes(gridcolor='#1e2638')
     st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
-
-# --- TOP STATUS BAR ---
-c_title, c_badge = st.columns([3, 1])
-with c_title:
-    st.markdown("<h2 style='margin-bottom:0;'>⚡ SANDEEP KUMAR <span style='font-size:1rem;color:#00d2c4;'>PRO TERMINAL</span></h2>", unsafe_allow_html=True)
-    st.caption(f"Authenticated as: {st.session_state['user']} • Angel One Live Exchange Engine")
-with c_badge:
-    st.markdown("<div style='text-align:right;padding-top:10px;'><span style='background:#102a27;color:#00e699;padding:4px 12px;border-radius:12px;font-size:0.75rem;border:1px solid #00e699;'>LIVE SYNC</span></div>", unsafe_allow_html=True)
-
-# Sidebar with User Info & Logout
-st.sidebar.markdown(f"**Member:** `{st.session_state['user']}`")
-if st.sidebar.button("🚪 Log Out", use_container_width=True):
-    supabase.auth.sign_out()
-    st.session_state["user"] = None
-    st.rerun()
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🎛️ Risk Engine")
-account_capital = st.sidebar.number_input("Portfolio Capital (₹)", value=100000, step=25000)
-risk_per_trade_pct = st.sidebar.slider("Risk Per Trade (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
-target_pct_choice = st.sidebar.slider("Target Return (%)", min_value=8, max_value=15, value=10, step=1)
-min_score = st.sidebar.slider("Minimum Setup Score", min_value=50, max_value=85, value=60, step=5)
-
-st.markdown("---")
-
-# 🔍 SEARCH BAR SECTION
-st.subheader("🔍 Instant Stock Search & Chart Inspector")
-all_stock_names = sorted(list(MASTER_STOCKS.keys()))
-col_search, col_btn = st.columns([3, 1])
-with col_search:
-    searched_stock = st.selectbox("Stock search karein (Jaise: RELIANCE, TATAMOTORS, ZOMATO):", all_stock_names)
-with col_btn:
-    st.write("")
-    st.write("")
-    search_clicked = st.button("📊 Open Chart", use_container_width=True)
-
-if search_clicked or st.session_state.get("active_search") == searched_stock:
-    st.session_state["active_search"] = searched_stock
-    smart_api = get_angel_client()
-    if smart_api:
-        with st.spinner(f"Fetching technicals for {searched_stock}..."):
-            token = MASTER_STOCKS[searched_stock]
-            df_search = fetch_and_prepare_df(smart_api, token)
-            if df_search is not None:
-                cmp = float(df_search.iloc[-1]['Close'])
-                atr = float(df_search.iloc[-1]['ATR']) if not pd.isna(df_search.iloc[-1]['ATR']) else (cmp * 0.02)
-                tgt = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
-                sl = round(cmp - (1.5 * atr), 2)
-                rsi = round(float(df_search.iloc[-1]['RSI']), 1)
-                
-                m1, m2, m3, m4 = st.columns(4)
-                m1.metric("CMP", f"₹{round(cmp, 2)}")
-                m2.metric(f"Target +{target_pct_choice}%", f"₹{tgt}")
-                m3.metric("ATR Stop-Loss", f"₹{sl}")
-                m4.metric("RSI (14)", f"{rsi}")
-                render_chart(df_search, searched_stock, tgt, sl)
-
-st.markdown("---")
-
-# 🚀 SCREENER SECTION
+    # 🚀 SCREENER SECTION
 st.subheader("⚡ Automated Momentum Screener")
 if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
     smart_api = get_angel_client()
@@ -419,4 +360,35 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
                         risk_per_share = cmp - stop_loss
                         qty = int(risk_amt // risk_per_share) if risk_per_share > 0 else 0
                         trade_capital = round(qty * cmp, 2)
-         
+                        target_price = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
+                        
+                        candles_store[sym] = df
+                        all_results.append({
+                            "Symbol": sym,
+                            "Score": f"{score}%",
+                            "CMP (₹)": round(cmp, 2),
+                            f"Target +{target_pct_choice}%": target_price,
+                            "Smart SL": stop_loss,
+                            "RSI": round(rsi, 1),
+                            "Vol Ratio": f"{round(vol_ratio, 2)}x",
+                            "Position Qty": qty,
+                            "Deploy Cap (₹)": trade_capital,
+                            "_score": score
+                        })
+                except Exception:
+                    continue
+
+            progress.empty()
+            if all_results:
+                all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
+                for item in all_results:
+                    del item['_score']
+                st.session_state["adv_results"] = all_results
+                st.session_state["adv_candles"] = candles_store
+
+if "adv_results" in st.session_state:
+    data = st.session_state["adv_results"]
+    if data:
+        st.success(f"🎯 Total {len(data)} Stocks Filtered!")
+        st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
+     
