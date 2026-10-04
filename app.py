@@ -19,17 +19,15 @@ st.set_page_config(
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
-# Custom High-Contrast & Glassmorphic CSS
+# Custom CSS
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    /* Streamlit Chrome & Headers Hide */
     #MainMenu, header, footer {visibility: hidden !important; display: none !important;}
     [data-testid="stToolbar"], [data-testid="stHeader"] {display: none !important;}
     [data-testid="manage-app-button"], .stAppDeployButton {display: none !important; visibility: hidden !important;}
     div[class*="viewerBadge"], iframe[title="Manage app"], div[data-testid="stStatusWidget"] {display: none !important;}
 
-    /* Global Dark Theme */
     .stApp { 
         background-color: #080a0f; 
         color: #f1f5f9; 
@@ -37,7 +35,6 @@ st.markdown("""
     }
     section[data-testid="stSidebar"] { background-color: #0f131c; border-right: 1px solid #1e2638; }
 
-    /* ================= LOGIN THEME (GLASSMORPHISM) ================= */
     .login-wrapper {
         min-height: 82vh;
         display: flex;
@@ -51,10 +48,8 @@ st.markdown("""
         overflow: hidden;
         border: 1px solid rgba(255, 255, 255, 0.12);
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-        animation: fadeIn 0.8s ease-in-out;
     }
 
-    /* Ambient Moon / Glowing Orb */
     .login-wrapper::before {
         content: "";
         position: absolute;
@@ -65,24 +60,11 @@ st.markdown("""
         height: 110px;
         background: radial-gradient(circle, #ffffff 30%, rgba(255, 255, 255, 0.8) 60%, rgba(255, 255, 255, 0) 100%);
         border-radius: 50%;
-        filter: blur(1px);
         box-shadow: 0 0 45px rgba(255, 255, 255, 0.85);
         z-index: 1;
         pointer-events: none;
-        animation: pulseMoon 4s ease-in-out infinite alternate;
     }
 
-    @keyframes pulseMoon {
-        0% { transform: translateX(-50%) scale(0.96); opacity: 0.9; }
-        100% { transform: translateX(-50%) scale(1.04); opacity: 1; filter: blur(0.5px); }
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(12px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Glassmorphism Card Overlay */
     div[data-testid="stForm"] {
         position: relative;
         z-index: 2;
@@ -93,28 +75,14 @@ st.markdown("""
         border-radius: 24px !important;
         padding: 35px 32px !important;
         box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45) !important;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-    div[data-testid="stForm"]:hover {
-        border-color: rgba(255, 255, 255, 0.35) !important;
-        box-shadow: 0 25px 55px rgba(0, 114, 255, 0.25) !important;
-    }
-
-    /* Pill-Shaped Inputs */
     .stTextInput div[data-baseweb="input"] {
         background-color: rgba(255, 255, 255, 0.16) !important;
         border: 1px solid rgba(255, 255, 255, 0.25) !important;
         border-radius: 30px !important;
         color: #ffffff !important;
         padding-left: 10px;
-        transition: all 0.3s ease !important;
-    }
-
-    .stTextInput div[data-baseweb="input"]:focus-within {
-        background-color: rgba(255, 255, 255, 0.24) !important;
-        border-color: #2196f3 !important;
-        box-shadow: 0 0 15px rgba(33, 150, 243, 0.45) !important;
     }
 
     .stTextInput input {
@@ -126,7 +94,6 @@ st.markdown("""
         color: rgba(255, 255, 255, 0.65) !important;
     }
 
-    /* Pill Blue Gradient Button */
     .stButton > button {
         background: linear-gradient(135deg, #1e88e5 0%, #00b0ff 100%) !important;
         color: #ffffff !important;
@@ -137,16 +104,8 @@ st.markdown("""
         border-radius: 30px !important;
         width: 100% !important;
         letter-spacing: 0.5px !important;
-        box-shadow: 0 6px 20px rgba(0, 176, 255, 0.35) !important;
-        transition: all 0.3s ease !important;
     }
 
-    .stButton > button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 10px 25px rgba(0, 176, 255, 0.6) !important;
-    }
-
-    /* Dashboard Metrics */
     div[data-testid="stMetric"] {
         background-color: #111622;
         border: 1px solid #1e2638;
@@ -171,15 +130,14 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# ================= AUTHENTICATION GATEWAY =================
+# ================= AUTH GATEWAY =================
 if st.session_state["user"] is None:
     st.markdown("<div class='login-wrapper'>", unsafe_allow_html=True)
-    
     _, col_auth, _ = st.columns([1, 1.25, 1])
     with col_auth:
         st.markdown("""
         <div style='text-align: center; margin-bottom: 22px; position: relative; z-index: 2;'>
-            <h1 style='font-size: 2.3rem; font-weight: 800; color: #ffffff; margin-bottom: 4px; letter-spacing: 0.5px;'>Login</h1>
+            <h1 style='font-size: 2.3rem; font-weight: 800; color: #ffffff; margin-bottom: 4px;'>Login</h1>
             <p style='color: rgba(255, 255, 255, 0.75); font-size: 0.85rem; margin: 0;'>Institutional Quantitative Screener</p>
         </div>
         """, unsafe_allow_html=True)
@@ -187,7 +145,7 @@ if st.session_state["user"] is None:
         auth_mode = st.radio("Access Level", ["Existing Member (Sign In)", "New Member (Sign Up)"], horizontal=True, label_visibility="collapsed")
         
         with st.form("auth_form"):
-            email = st.text_input("Username / Email", placeholder="👤  Username or email@address.com")
+            email = st.text_input("Username / Email", placeholder="👤  CodeByGaurav / email@address.com")
             password = st.text_input("Password", type="password", placeholder="🔒  ••••••••••••")
             
             st.markdown("""
@@ -232,7 +190,7 @@ if st.session_state["user"] is None:
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# ================= SCREENER APP (POST-LOGIN ACCESS) =================
+# ================= SCREENER APP =================
 
 MASTER_STOCKS = {
     "RELIANCE": "2885", "TCS": "11536", "HDFCBANK": "1333", "INFY": "1594",
@@ -259,7 +217,8 @@ def get_angel_client():
         totp = pyotp.TOTP(totp_key).now()
         smart_api = SmartConnect(api_key=api_key)
         data = smart_api.generateSession(client_code, pin, totp)
-        if data['status']: return smart_api
+        if data.get('status'):
+            return smart_api
         return None
     except Exception:
         return None
@@ -285,9 +244,11 @@ def fetch_and_prepare_df(smart_api, token):
         "exchange": "NSE", "symboltoken": token,
         "interval": "ONE_DAY", "fromdate": from_date, "todate": to_date
     })
-    if not res.get('status') or not res.get('data'): return None
+    if not res.get('status') or not res.get('data'):
+        return None
     df = pd.DataFrame(res['data'], columns=['Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
-    if len(df) < 35: return None
+    if len(df) < 35:
+        return None
     df['Time'] = pd.to_datetime(df['Time'])
     df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
     df['EMA50'] = df['Close'].ewm(span=50, adjust=False).mean()
@@ -401,7 +362,7 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
                 progress.progress((idx + 1) / len(scan_universe))
                 try:
                     df = fetch_and_prepare_df(smart_api, token)
-                    if df is None: 
+                    if df is None:
                         continue
                     last, prev = df.iloc[-1], df.iloc[-2]
                     cmp, ema20, ema50 = float(last['Close']), float(last['EMA20']), float(last['EMA50'])
@@ -411,14 +372,48 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
                     atr = float(last['ATR']) if not pd.isna(last['ATR']) else (cmp * 0.02)
                     
                     score = 0
-                    if cmp > ema20 > ema50: 
+                    if cmp > ema20 > ema50:
                         score += 35
-                    elif cmp > ema20: 
+                    elif cmp > ema20:
                         score += 20
                     
-                    if 50 <= rsi <= 70: 
+                    if 50 <= rsi <= 70:
                         score += 30
-                    elif 45 <= rsi < 50: 
+                    elif 45 <= rsi < 50:
                         score += 15
                     
-                 
+                    vol_ratio = vol / avg_vol
+                    if vol_ratio >= 1.2:
+                        score += 25
+                    elif vol_ratio >= 1.0:
+                        score += 15
+                    
+                    if cmp > float(prev['High']):
+                        score += 10
+                    
+                    if score >= min_score:
+                        risk_amt = account_capital * (risk_per_trade_pct / 100.0)
+                        stop_loss = round(cmp - (1.5 * atr), 2)
+                        risk_per_share = cmp - stop_loss
+                        qty = int(risk_amt // risk_per_share) if risk_per_share > 0 else 0
+                        trade_capital = round(qty * cmp, 2)
+                        target_price = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
+                        
+                        candles_store[sym] = df
+                        all_results.append({
+                            "Symbol": sym,
+                            "Score": f"{score}%",
+                            "CMP (₹)": round(cmp, 2),
+                            f"Target +{target_pct_choice}%": target_price,
+                            "Smart SL": stop_loss,
+                            "RSI": round(rsi, 1),
+                            "Vol Ratio": f"{round(vol_ratio, 2)}x",
+                            "Position Qty": qty,
+                            "Deploy Cap (₹)": trade_capital,
+                            "_score": score
+                        })
+                except Exception:
+                    continue
+
+            progress.empty()
+            if all_results:
