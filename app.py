@@ -37,7 +37,7 @@ st.markdown("""
     }
     section[data-testid="stSidebar"] { background-color: #0f131c; border-right: 1px solid #1e2638; }
 
-    /* ================= LOGIN THEME (IMAGE REPLICATION) ================= */
+    /* ================= LOGIN THEME (GLASSMORPHISM) ================= */
     .login-wrapper {
         min-height: 82vh;
         display: flex;
@@ -210,7 +210,7 @@ if st.session_state["user"] is None:
                 if not email or not password:
                     st.error("⚠️ Email aur Password dono fill karein.")
                 elif len(password) < 6:
-                    st.error("⚠️️ Password minimum 6 characters ka hona chahiye.")
+                    st.error("⚠️ Password minimum 6 characters ka hona chahiye.")
                 else:
                     clean_email = email.replace("👤", "").strip()
                     if "Sign Up" in auth_mode:
@@ -421,4 +421,4 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
                     elif 45 <= rsi < 50: 
                         score += 15
                     
-            
+                 
