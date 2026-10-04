@@ -33,40 +33,7 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# ================= LOGIN SCREEN THEME =================
-if st.session_state["user"] is None:
-    st.markdown("""
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        #MainMenu, header, footer, [data-testid="stToolbar"], [data-testid="stHeader"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
 
-        .stApp {
-            background: radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.95) 0%, rgba(144, 202, 249, 0.45) 12%, rgba(25, 118, 210, 0.6) 28%, rgba(13, 37, 72, 0.95) 65%, #07111e 100%),
-                        linear-gradient(180deg, #1e88e5 0%, #0d2847 45%, #050d1a 100%) !important;
-            min-height: 100vh;
-        }
-
-        .stApp::before {
-            content: "";
-            position: fixed;
-            top: 35px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 105px;
-            height: 105px;
-            background: radial-gradient(circle, #ffffff 40%, rgba(255, 255, 255, 0.8) 65%, rgba(255, 255, 255, 0) 100%);
-            border-radius: 50%;
-            box-shadow: 0 0 50px rgba(255, 255, 255, 0.85);
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        div[data-testid="stForm"] {
-            position: relative;
-            z-index: 10;
             background: rgba(255, 255, 255, 0.12) !important;
             backdrop-filter: blur(25px) !important;
             -webkit-backdrop-filter: blur(25px) !important;
@@ -203,25 +170,233 @@ if st.session_state["user"] is None:
                                 st.success("✅ Account ban gaya! Ab Login karke access karein.")
                                 st.session_state["auth_mode"] = "login"
                         except Exception as e:
-                            st.error(f"Sign Up Failed: {str(e)}")
+# Session state initialization
+if "auth_mode" not in st.session_state:
+    st.session_state["auth_mode"] = "login"
+
+# ================= LOGIN SCREEN THEME (WITH WORKING FORGOT PASSWORD) =================
+if st.session_state["user"] is None:
+    st.markdown("""
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        #MainMenu, header, footer, [data-testid="stToolbar"], [data-testid="stHeader"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        .stApp {
+            background: radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.95) 0%, rgba(144, 202, 249, 0.45) 12%, rgba(25, 118, 210, 0.6) 28%, rgba(13, 37, 72, 0.95) 65%, #07111e 100%),
+                        linear-gradient(180deg, #1e88e5 0%, #0d2847 45%, #050d1a 100%) !important;
+            min-height: 100vh;
+        }
+
+        .stApp::before {
+            content: "";
+            position: fixed;
+            top: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 105px;
+            height: 105px;
+            background: radial-gradient(circle, #ffffff 40%, rgba(255, 255, 255, 0.8) 65%, rgba(255, 255, 255, 0) 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.85);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        div[data-testid="stForm"] {
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.12) !important;
+            backdrop-filter: blur(25px) !important;
+            -webkit-backdrop-filter: blur(25px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.28) !important;
+            border-radius: 28px !important;
+            padding: 38px 30px 30px 30px !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
+            margin-top: 40px;
+        }
+
+        .stTextInput div[data-baseweb="input"] {
+            background-color: rgba(255, 255, 255, 0.45) !important;
+            border: 1.5px solid rgba(255, 255, 255, 0.8) !important;
+            border-radius: 35px !important;
+            height: 50px;
+            padding-left: 10px;
+            transition: all 0.3s ease !important;
+        }
+
+        .stTextInput div[data-baseweb="input"]:focus-within {
+            background-color: #ffffff !important;
+            border-color: #00b0ff !important;
+            box-shadow: 0 0 16px rgba(0, 176, 255, 0.7) !important;
+        }
+
+        .stTextInput input {
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            font-weight: 600 !important;
+            font-size: 1rem !important;
+        }
+
+        .stTextInput input::placeholder {
+            color: #475569 !important;
+            -webkit-text-fill-color: #475569 !important;
+            font-weight: 500 !important;
+        }
+
+        div[data-testid="stForm"] div[data-testid="stFormSubmitButton"] {
+            display: flex !important;
+            justify-content: center !important;
+            width: 100% !important;
+        }
+
+        div[data-testid="stForm"] .stButton > button {
+            background: linear-gradient(135deg, #1e88e5 0%, #00b0ff 100%) !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+            border: none !important;
+            height: 48px !important;
+            font-weight: 700 !important;
+            font-size: 1.05rem !important;
+            border-radius: 35px !important;
+            width: 100% !important;
+            box-shadow: 0 6px 20px rgba(0, 176, 255, 0.45) !important;
+            transition: all 0.3s ease !important;
+        }
+
+        div[data-testid="stForm"] .stButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 10px 25px rgba(0, 176, 255, 0.7) !important;
+        }
+
+        div[data-testid="stVerticalBlock"] > div.stButton > button {
+            background: transparent !important;
+            border: none !important;
+            color: rgba(255, 255, 255, 0.88) !important;
+            box-shadow: none !important;
+            font-size: 0.9rem !important;
+            margin-top: 6px;
+        }
+        div[data-testid="stVerticalBlock"] > div.stButton > button:hover {
+            color: #ffffff !important;
+            text-decoration: underline !important;
+            background: transparent !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    _, col_auth, _ = st.columns([1, 1.15, 1])
+    with col_auth:
+        mode = st.session_state["auth_mode"]
+        
+        # ---------------- 1. FORGOT PASSWORD VIEW ----------------
+        if mode == "forgot":
+            with st.form("forgot_password_form"):
+                st.markdown("""
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <h1 style='font-size: 2.1rem; font-weight: 800; color: #ffffff; margin: 0;'>Reset Access</h1>
+                    <p style='color: rgba(255,255,255,0.8); font-size: 0.85rem; margin-top: 6px;'>Apna registered email enter karein password reset link paane ke liye.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                reset_email = st.text_input("Reset Email", placeholder="✉️  email@domain.com", label_visibility="collapsed")
+                st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+                
+                submit_reset = st.form_submit_button("Send Reset Link", use_container_width=True)
+                
+                if submit_reset:
+                    if not reset_email:
+                        st.error("⚠️ Kripya email enter karein.")
                     else:
                         try:
-                            res = supabase.auth.sign_in_with_password({"email": clean_email, "password": password})
-                            if res.user:
-                                st.session_state["user"] = res.user.email
-                                # Save Name from Supabase Metadata
-                                meta_name = res.user.user_metadata.get("full_name") if res.user.user_metadata else None
-                                st.session_state["user_name"] = meta_name if meta_name else res.user.email.split("@")[0].capitalize()
-                                st.rerun()
-                        except Exception:
-                            st.error("❌ Invalid Credentials. Dobara check karein.")
+                            clean_reset = reset_email.replace("✉️", "").strip()
+                            supabase.auth.reset_password_for_email(clean_reset)
+                            st.success("📩 Password reset link aapke email par bhej diya gaya hai! Inbox check karein.")
+                        except Exception as e:
+                            st.error(f"Reset Failed: {str(e)}")
+            
+            if st.button("⬅️ Back to Login", key="back_to_login", use_container_width=True):
+                st.session_state["auth_mode"] = "login"
+                st.rerun()
 
-        switch_text = "Don't have an account? Register" if is_login else "Already have an account? Login"
-        if st.button(switch_text, key="switch_auth_btn", use_container_width=True):
-            st.session_state["auth_mode"] = "register" if is_login else "login"
-            st.rerun()
+        # ---------------- 2. LOGIN & REGISTER VIEW ----------------
+        else:
+            is_login = mode == "login"
+            card_title = "Login" if is_login else "Register[span_2](start_span)[span_3](start_span)"[span_2](end_span)[span_3](end_span)
+            
+            with st.form("auth_form"):
+                st.markdown(f"""
+                <div style='text-align: center; margin-bottom: 24px;'>
+                    <h1 style='font-size: 2.3rem; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: 0.5px;'>{card_title}</h1>
+                </div>
+                """, unsafe_allow_html=True)[span_4](start_span)[span_4](end_span)
+                
+                full_name = None
+                if not is_login:
+                    full_name = st.text_input("Name", placeholder="👤  Full Name (Jaise: Rahul Sharma)", label_visibility="collapsed")
+                    st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+                
+                email = st.text_input("Email", placeholder="✉️  email@domain.com", label_visibility="collapsed")
+                st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+                password = st.text_input("Password", type="password", placeholder="🔒  ••••••••••••", label_visibility="collapsed")
+                
+                st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
+                submit = st.form_submit_button(card_title, use_container_width=True)
+                
+                if submit:
+                    if not email or not password:
+                        st.error("⚠️ Email aur Password dono fill karein.")
+                    elif not is_login and not full_name:
+                        st.error("⚠️ Kripya apna Naam fill karein.")
+                    elif len(password) < 6:
+                        st.error("⚠️ Password minimum 6 characters ka hona chahiye.")
+                    else:
+                        clean_email = email.replace("✉️", "").strip()
+                        if "@" not in clean_email:
+                            clean_email = f"{clean_email}@terminal.com"
+                        
+                        if not is_login:
+                            try:
+                                res = supabase.auth.sign_up({
+                                    "email": clean_email,
+                                    "password": password,
+                                    "options": {
+                                        "data": {"full_name": full_name.strip()}
+                                    }
+                                })
+                                if res.user:
+                                    st.success("✅ Account ban gaya! Ab Login karke access karein.")
+                                    st.session_state["auth_mode"] = "login"
+                            except Exception as e:
+                                st.error(f"Sign Up Failed: {str(e)}")
+                        else:
+                            try:
+                                res = supabase.auth.sign_in_with_password({"email": clean_email, "password": password})
+                                if res.user:
+                                    st.session_state["user"] = res.user.email
+                                    meta_name = res.user.user_metadata.get("full_name") if res.user.user_metadata else None
+                                    st.session_state["user_name"] = meta_name if meta_name else res.user.email.split("@")[0].capitalize()
+                                    st.rerun()
+                            except Exception:
+                                st.error("❌ Invalid Credentials. Dobara check karein.")
+
+            # Form ke theek niche functional options
+            c_switch, c_forgot = st.columns([1.2, 1])
+            with c_switch:
+                switch_text = "Don't have an account? Register" if is_login else "Already have an account? Login[span_5](start_span)[span_6](start_span)"[span_5](end_span)[span_6](end_span)
+                if st.button(switch_text, key="switch_auth_btn", use_container_width=True):
+                    st.session_state["auth_mode"] = "register" if is_login else "login"
+                    st.rerun()
+            with c_forgot:
+                if is_login:
+                    if st.button("Forgot Password?", key="forgot_pwd_btn", use_container_width=True):
+                        st.session_state["auth_mode"] = "forgot"
+                        st.rerun()
 
     st.stop()
+
 
 # ================= POST-LOGIN TERMINAL THEME & APP =================
 st.markdown("""
