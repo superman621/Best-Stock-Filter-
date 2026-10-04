@@ -33,7 +33,7 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# ================= LOGIN SCREEN THEME (WORKING AUTH & FORGOT PASSWORD) =================
+# ================= LOGIN SCREEN THEME =================
 if st.session_state["user"] is None:
     st.markdown("""
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -72,7 +72,7 @@ if st.session_state["user"] is None:
             -webkit-backdrop-filter: blur(25px) !important;
             border: 1px solid rgba(255, 255, 255, 0.28) !important;
             border-radius: 28px !important;
-            padding: 38px 30px 30px 30px !important;
+            padding: 38px 30px 25px 30px !important;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
             margin-top: 40px;
         }
@@ -130,13 +130,14 @@ if st.session_state["user"] is None:
             box-shadow: 0 10px 25px rgba(0, 176, 255, 0.7) !important;
         }
 
+        /* Outside Navigation Buttons */
         div[data-testid="stVerticalBlock"] > div.stButton > button {
             background: transparent !important;
             border: none !important;
-            color: rgba(255, 255, 255, 0.88) !important;
+            color: rgba(255, 255, 255, 0.9) !important;
             box-shadow: none !important;
             font-size: 0.9rem !important;
-            margin-top: 6px;
+            margin-top: 4px;
         }
         div[data-testid="stVerticalBlock"] > div.stButton > button:hover {
             color: #ffffff !important;
@@ -183,14 +184,14 @@ if st.session_state["user"] is None:
         # ---------------- LOGIN & REGISTER VIEW ----------------
         else:
             is_login = mode == "login"
-            card_title = "Login" if is_login else "Register[span_3](start_span)[span_4](start_span)"[span_3](end_span)[span_4](end_span)
+            card_title = "Login" if is_login else "Register"
             
             with st.form("auth_form"):
                 st.markdown(f"""
                 <div style='text-align: center; margin-bottom: 24px;'>
                     <h1 style='font-size: 2.3rem; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: 0.5px;'>{card_title}</h1>
                 </div>
-                """, unsafe_allow_html=True)[span_5](start_span)[span_5](end_span)
+                """, unsafe_allow_html=True)
                 
                 full_name = None
                 if not is_login:
@@ -212,7 +213,7 @@ if st.session_state["user"] is None:
                     elif len(password) < 6:
                         st.error("⚠️ Password minimum 6 characters ka hona chahiye.")
                     else:
-                        clean_email = email.replace("✉️️", "").strip()
+                        clean_email = email.replace("✉️", "").strip()
                         if "@" not in clean_email:
                             clean_email = f"{clean_email}@terminal.com"
                         
@@ -241,17 +242,18 @@ if st.session_state["user"] is None:
                             except Exception:
                                 st.error("❌ Invalid Credentials. Dobara check karein.")
 
-            c_switch, c_forgot = st.columns([1.2, 1])
-            with c_switch:
-                switch_text = "Don't have an account? Register" if is_login else "Already have an account? Login[span_6](start_span)[span_7](start_span)"[span_6](end_span)[span_7](end_span)
-                if st.button(switch_text, key="switch_auth_btn", use_container_width=True):
-                    st.session_state["auth_mode"] = "register" if is_login else "login"
+            # Form ke niche switch buttons (no nested columns)
+            if is_login:
+                if st.button("Don't have an account? Register", key="switch_to_reg", use_container_width=True):
+                    st.session_state["auth_mode"] = "register"
                     st.rerun()
-            with c_forgot:
-                if is_login:
-                    if st.button("Forgot Password?", key="forgot_pwd_btn", use_container_width=True):
-                        st.session_state["auth_mode"] = "forgot"
-                        st.rerun()
+                if st.button("Forgot Password?", key="switch_to_forgot", use_container_width=True):
+                    st.session_state["auth_mode"] = "forgot"
+                    st.rerun()
+            else:
+                if st.button("Already have an account? Login", key="switch_to_login", use_container_width=True):
+                    st.session_state["auth_mode"] = "login"
+                    st.rerun()
 
     st.stop()
 
@@ -399,4 +401,5 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎛️ Risk Engine")
 account_capital = st.sidebar.number_input("Portfolio Capital (₹)", value=100000, step=25000)
 risk_per_trade_pct = st.sidebar.slider("Risk Per Trade (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
-target_pct_c
+target_pct_choice = st.sidebar.slider("Target Return (%)", min_value=8, max_value=15, value=10, step=1)
+min_score = st.sidebar.slider("Minimum Setup Sco
