@@ -1,11 +1,11 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import yfinance as yf
 import pandas as pd
+import plotly.graph_objects as go
 
 st.set_page_config(page_title="Swing Screener Pro", layout="wide")
 st.title("🎯 15-Day Swing Screener (10% Target Setup)")
-st.caption("Auto-ranks top momentum stocks based on Trend + Volume + RSI")
+st.caption("Filters high-momentum stocks with Native Interactive Candlestick Charts")
 
 WATCHLIST = [
     "TATAMOTORS.NS", "RELIANCE.NS", "SBIN.NS", "INFY.NS", "ICICIBANK.NS", 
@@ -25,21 +25,19 @@ def calculate_rsi(series, period=14):
     return 100 - (100 / (1 + rs))
 
 if st.button("🚀 Scan Market Now", use_container_width=True):
-    with st.spinner("Analyzing stocks..."):
+    with st.spinner("Analyzing stocks and technical setups..."):
         all_results = []
         progress_bar = st.progress(0)
 
         for idx, ticker in enumerate(WATCHLIST):
             progress_bar.progress((idx + 1) / len(WATCHLIST))
             try:
-                # Direct history use karte hain (no multi-index error)
                 t = yf.Ticker(ticker)
                 df = t.history(period="6mo", interval="1d")
                 
                 if df.empty or len(df) < 50:
                     continue
 
-                # Indicators
                 df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
                 df['EMA50'] = df['Close'].ewm(span=50, adjust=False).mean()
                 df['Vol_SMA20'] = df['Volume'].rolling(20).mean()
@@ -53,10 +51,6 @@ if st.button("🚀 Scan Market Now", use_container_width=True):
                 vol = float(last['Volume'])
                 avg_vol = float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
 
-                # Score System (Taaki 0 results na aayein):
-                # +40 points: Price above 20 EMA and 50 EMA
-                # +30 points: Healthy RSI (50 to 70)
-                # +30 points: Volume Surge (Above average)
                 score = 0
                 if cmp > ema20 > ema50:
                     score += 40
@@ -74,10 +68,10 @@ if st.button("🚀 Scan Market Now", use_container_width=True):
                 elif vol_ratio >= 0.9:
                     score += 15
 
-                # Sirf wahi stocks show honge jinka setup 60%+ strong hai
                 if score >= 60:
                     all_results.append({
                         "Stock": ticker.replace(".NS", ""),
+                        "Ticker": ticker,
                         "Setup Strength": f"{score}%",
                         "CMP (₹)": round(cmp, 2),
                         "Target 10% (₹)": round(cmp * 1.10, 2),
@@ -91,7 +85,6 @@ if st.button("🚀 Scan Market Now", use_container_width=True):
 
         progress_bar.empty()
         
-        # Sort best setups on top
         if all_results:
             all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
             for item in all_results:
@@ -99,43 +92,54 @@ if st.button("🚀 Scan Market Now", use_container_width=True):
         
         st.session_state["stocks_data"] = all_results
 
-# Display Table & Interactive TradingView Chart
+# Display Section
 if "stocks_data" in st.session_state:
     data = st.session_state["stocks_data"]
     if data:
-        st.success(f"🎯 Total {len(data)} High-Probability Swing Setups Found!")
-        st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
+        st.success(f"🎯 Total {len(data)} Stocks Filtered!")
+        display_df = pd.DataFrame(data).drop(columns=["Ticker"])
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
 
         st.markdown("---")
-        st.subheader("📊 Live Chart View")
+        st.subheader("📊 Direct Candlestick Chart View")
 
         stock_symbols = [item["Stock"] for item in data]
-        selected = st.selectbox("Chart dekhne ke liye stock chunein:", stock_symbols)
+        selected_stock = st.selectbox("Chart dekhne ke liye stock chunein:", stock_symbols)
+        
+        # Selected stock details
+        selected_item = next(item for item in data if item["Stock"] == selected_stock)
+        target_val = selected_item["Target 10% (₹)"]
+        sl_val = selected_item["Stop-Loss 5% (₹)"]
 
-        tv_html = f"""
-        <div class="tradingview-widget-container" style="height:500px;width:100%">
-          <div id="tradingview_chart" style="height:500px;width:100%"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-          <script type="text/javascript">
-          new TradingView.widget(
-          {{
-            "autosize": true,
-            "symbol": "NSE:{selected}",
-            "interval": "D",
-            "timezone": "Asia/Kolkata",
-            "theme": "light",
-            "style": "1",
-            "locale": "en",
-            "toolbar_bg": "#f1f3f6",
-            "enable_publishing": false,
-            "allow_symbol_change": true,
-            "container_id": "tradingview_chart"
-          }}
-          );
-          </script>
-        </div>
-        """
-        components.html(tv_html, height=520)
+        # Fetch candle data for selected stock
+        hist = yf.Ticker(selected_item["Ticker"]).history(period="3mo", interval="1d")
+
+        # Native Candlestick Chart
+        fig = go.Figure(data=[go.Candlestick(
+            x=hist.index,
+            open=hist['Open'],
+            high=hist['High'],
+            low=hist['Low'],
+            close=hist['Close'],
+            name=selected_stock
+        )])
+
+        # Target (10%) & Stop-loss (5%) horizontal lines
+        fig.add_hline(y=target_val, line_dash="dash", line_color="green", annotation_text=f"Target 10%: ₹{target_val}")
+        fig.add_hline(y=sl_val, line_dash="dash", line_color="red", annotation_text=f"SL 5%: ₹{sl_val}")
+
+        fig.update_layout(
+            title=f"{selected_stock} Daily Chart (Target & SL Levels)",
+            yaxis_title="Price (₹)",
+            xaxis_rangeslider_visible=False,
+            height=450,
+            margin=dict(l=20, r=20, t=40, b=20)
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # TradingView link for external detailed view
+        st.link_button(f"🌐 Open {selected_stock} in TradingView App/Site", f"https://in.tradingview.com/chart/?symbol=NSE:{selected_stock}")
     else:
-        st.warning("Filhal market condition weak hai, koi bhi stock minimum 60% setup match nahi kar raha.")
+        st.warning("Aaj koi setup match nahi hua.")
         
