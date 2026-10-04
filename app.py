@@ -13,11 +13,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Dark Terminal CSS
+# Custom CSS to HIDE GitHub Icon, Top Header, and Main Menu
 st.markdown("""
 <style>
+    /* GitHub Icon, Share button, aur Header ko poori tarah hide karein */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
+    [data-testid="stHeader"] {display: none !important;}
+    .viewerBadge_container__1QSob {display: none !important;}
+    
+    /* Global Page Styling */
     .stApp { background-color: #0b0e14; color: #e1e7ec; }
     section[data-testid="stSidebar"] { background-color: #11151f; border-right: 1px solid #1e2638; }
+    
     div[data-testid="stMetric"] {
         background-color: #141a29;
         border: 1px solid #232d42;
