@@ -23,7 +23,7 @@ if "user_name" not in st.session_state:
 if "auth_mode" not in st.session_state:
     st.session_state["auth_mode"] = "login"
 
-# Supabase Auth Client Init (Auto-Fix for Invalid Path URL)
+# Supabase Auth Client Init (Auto-Fix for trailing path / invalid URL)
 @st.cache_resource
 def init_supabase() -> Client:
     raw_url = st.secrets["SUPABASE_URL"].strip()
@@ -33,148 +33,7 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-
-            background: rgba(255, 255, 255, 0.12) !important;
-            backdrop-filter: blur(25px) !important;
-            -webkit-backdrop-filter: blur(25px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.28) !important;
-            border-radius: 28px !important;
-            padding: 38px 30px 30px 30px !important;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
-            margin-top: 40px;
-        }
-
-        .stTextInput div[data-baseweb="input"] {
-            background-color: rgba(255, 255, 255, 0.45) !important;
-            border: 1.5px solid rgba(255, 255, 255, 0.8) !important;
-            border-radius: 35px !important;
-            height: 50px;
-            padding-left: 10px;
-            transition: all 0.3s ease !important;
-        }
-
-        .stTextInput div[data-baseweb="input"]:focus-within {
-            background-color: #ffffff !important;
-            border-color: #00b0ff !important;
-            box-shadow: 0 0 16px rgba(0, 176, 255, 0.7) !important;
-        }
-
-        .stTextInput input {
-            color: #0f172a !important;
-            -webkit-text-fill-color: #0f172a !important;
-            font-weight: 600 !important;
-            font-size: 1rem !important;
-        }
-
-        .stTextInput input::placeholder {
-            color: #475569 !important;
-            -webkit-text-fill-color: #475569 !important;
-            font-weight: 500 !important;
-        }
-
-        div[data-testid="stForm"] div[data-testid="stFormSubmitButton"] {
-            display: flex !important;
-            justify-content: center !important;
-            width: 100% !important;
-        }
-
-        div[data-testid="stForm"] .stButton > button {
-            background: linear-gradient(135deg, #1e88e5 0%, #00b0ff 100%) !important;
-            color: #ffffff !important;
-            -webkit-text-fill-color: #ffffff !important;
-            border: none !important;
-            height: 48px !important;
-            font-weight: 700 !important;
-            font-size: 1.05rem !important;
-            border-radius: 35px !important;
-            width: 100% !important;
-            box-shadow: 0 6px 20px rgba(0, 176, 255, 0.45) !important;
-            transition: all 0.3s ease !important;
-        }
-
-        div[data-testid="stForm"] .stButton > button:hover {
-            transform: translateY(-2px) !important;
-            box-shadow: 0 10px 25px rgba(0, 176, 255, 0.7) !important;
-        }
-
-        div[data-testid="stVerticalBlock"] > div.stButton > button {
-            background: transparent !important;
-            border: none !important;
-            color: rgba(255, 255, 255, 0.88) !important;
-            box-shadow: none !important;
-            font-size: 0.9rem !important;
-            margin-top: 6px;
-        }
-        div[data-testid="stVerticalBlock"] > div.stButton > button:hover {
-            color: #ffffff !important;
-            text-decoration: underline !important;
-            background: transparent !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-    _, col_auth, _ = st.columns([1, 1.15, 1])
-    with col_auth:
-        is_login = st.session_state["auth_mode"] == "login"
-        card_title = "Login" if is_login else "Register"
-        
-        with st.form("auth_form"):
-            st.markdown(f"""
-            <div style='text-align: center; margin-bottom: 24px;'>
-                <h1 style='font-size: 2.3rem; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: 0.5px;'>{card_title}</h1>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Register karte waqt Full Name ka field aayega
-            full_name = None
-            if not is_login:
-                full_name = st.text_input("Name", placeholder="👤  Full Name (Jaise: Rahul Sharma)", label_visibility="collapsed")
-                st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
-            
-            email = st.text_input("Email", placeholder="✉️  email@domain.com", label_visibility="collapsed")
-            st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
-            password = st.text_input("Password", type="password", placeholder="🔒  ••••••••••••", label_visibility="collapsed")
-            
-            st.markdown("""
-            <div style='display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: rgba(255, 255, 255, 0.9); margin: 14px 4px 22px 4px;'>
-                <span><i class="fa-solid fa-square-check" style="color: #00b0ff; margin-right: 5px;"></i> Remember me</span>
-                <span style='cursor: pointer;'>Forgot Password</span>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            submit = st.form_submit_button(card_title, use_container_width=True)
-            
-            if submit:
-                if not email or not password:
-                    st.error("⚠️ Email aur Password dono fill karein.")
-                elif not is_login and not full_name:
-                    st.error("⚠️ Kripya apna Naam fill karein.")
-                elif len(password) < 6:
-                    st.error("⚠️ Password minimum 6 characters ka hona chahiye.")
-                else:
-                    clean_email = email.replace("✉️", "").strip()
-                    if "@" not in clean_email:
-                        clean_email = f"{clean_email}@terminal.com"
-                    
-                    if not is_login:
-                        try:
-                            # Full name user metadata mein save ho raha hai
-                            res = supabase.auth.sign_up({
-                                "email": clean_email,
-                                "password": password,
-                                "options": {
-                                    "data": {"full_name": full_name.strip()}
-                                }
-                            })
-                            if res.user:
-                                st.success("✅ Account ban gaya! Ab Login karke access karein.")
-                                st.session_state["auth_mode"] = "login"
-                        except Exception as e:
-# Session state initialization
-if "auth_mode" not in st.session_state:
-    st.session_state["auth_mode"] = "login"
-
-# ================= LOGIN SCREEN THEME (WITH WORKING FORGOT PASSWORD) =================
+# ================= LOGIN SCREEN THEME (WORKING AUTH & FORGOT PASSWORD) =================
 if st.session_state["user"] is None:
     st.markdown("""
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -291,13 +150,13 @@ if st.session_state["user"] is None:
     with col_auth:
         mode = st.session_state["auth_mode"]
         
-        # ---------------- 1. FORGOT PASSWORD VIEW ----------------
+        # ---------------- FORGOT PASSWORD VIEW ----------------
         if mode == "forgot":
             with st.form("forgot_password_form"):
                 st.markdown("""
                 <div style='text-align: center; margin-bottom: 20px;'>
                     <h1 style='font-size: 2.1rem; font-weight: 800; color: #ffffff; margin: 0;'>Reset Access</h1>
-                    <p style='color: rgba(255,255,255,0.8); font-size: 0.85rem; margin-top: 6px;'>Apna registered email enter karein password reset link paane ke liye.</p>
+                    <p style='color: rgba(255,255,255,0.85); font-size: 0.85rem; margin-top: 6px;'>Apna registered email enter karein password reset link paane ke liye.</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -321,17 +180,17 @@ if st.session_state["user"] is None:
                 st.session_state["auth_mode"] = "login"
                 st.rerun()
 
-        # ---------------- 2. LOGIN & REGISTER VIEW ----------------
+        # ---------------- LOGIN & REGISTER VIEW ----------------
         else:
             is_login = mode == "login"
-            card_title = "Login" if is_login else "Register[span_2](start_span)[span_3](start_span)"[span_2](end_span)[span_3](end_span)
+            card_title = "Login" if is_login else "Register[span_3](start_span)[span_4](start_span)"[span_3](end_span)[span_4](end_span)
             
             with st.form("auth_form"):
                 st.markdown(f"""
                 <div style='text-align: center; margin-bottom: 24px;'>
                     <h1 style='font-size: 2.3rem; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: 0.5px;'>{card_title}</h1>
                 </div>
-                """, unsafe_allow_html=True)[span_4](start_span)[span_4](end_span)
+                """, unsafe_allow_html=True)[span_5](start_span)[span_5](end_span)
                 
                 full_name = None
                 if not is_login:
@@ -353,7 +212,7 @@ if st.session_state["user"] is None:
                     elif len(password) < 6:
                         st.error("⚠️ Password minimum 6 characters ka hona chahiye.")
                     else:
-                        clean_email = email.replace("✉️", "").strip()
+                        clean_email = email.replace("✉️️", "").strip()
                         if "@" not in clean_email:
                             clean_email = f"{clean_email}@terminal.com"
                         
@@ -382,10 +241,9 @@ if st.session_state["user"] is None:
                             except Exception:
                                 st.error("❌ Invalid Credentials. Dobara check karein.")
 
-            # Form ke theek niche functional options
             c_switch, c_forgot = st.columns([1.2, 1])
             with c_switch:
-                switch_text = "Don't have an account? Register" if is_login else "Already have an account? Login[span_5](start_span)[span_6](start_span)"[span_5](end_span)[span_6](end_span)
+                switch_text = "Don't have an account? Register" if is_login else "Already have an account? Login[span_6](start_span)[span_7](start_span)"[span_6](end_span)[span_7](end_span)
                 if st.button(switch_text, key="switch_auth_btn", use_container_width=True):
                     st.session_state["auth_mode"] = "register" if is_login else "login"
                     st.rerun()
@@ -396,7 +254,6 @@ if st.session_state["user"] is None:
                         st.rerun()
 
     st.stop()
-
 
 # ================= POST-LOGIN TERMINAL THEME & APP =================
 st.markdown("""
@@ -542,126 +399,4 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎛️ Risk Engine")
 account_capital = st.sidebar.number_input("Portfolio Capital (₹)", value=100000, step=25000)
 risk_per_trade_pct = st.sidebar.slider("Risk Per Trade (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
-target_pct_choice = st.sidebar.slider("Target Return (%)", min_value=8, max_value=15, value=10, step=1)
-min_score = st.sidebar.slider("Minimum Setup Score", min_value=50, max_value=85, value=60, step=5)
-
-st.markdown("---")
-
-# 🔍 SEARCH BAR SECTION
-st.subheader("🔍 Instant Stock Search & Chart Inspector")
-all_stock_names = sorted(list(MASTER_STOCKS.keys()))
-col_search, col_btn = st.columns([3, 1])
-with col_search:
-    searched_stock = st.selectbox("Stock search karein (Jaise: RELIANCE, TATAMOTORS, ZOMATO):", all_stock_names)
-with col_btn:
-    st.write("")
-    st.write("")
-    search_clicked = st.button("📊 Open Chart", use_container_width=True)
-
-if search_clicked or st.session_state.get("active_search") == searched_stock:
-    st.session_state["active_search"] = searched_stock
-    smart_api = get_angel_client()
-    if smart_api:
-        with st.spinner(f"Fetching technicals for {searched_stock}..."):
-            token = MASTER_STOCKS[searched_stock]
-            df_search = fetch_and_prepare_df(smart_api, token)
-            if df_search is not None:
-                cmp = float(df_search.iloc[-1]['Close'])
-                atr = float(df_search.iloc[-1]['ATR']) if not pd.isna(df_search.iloc[-1]['ATR']) else (cmp * 0.02)
-                tgt = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
-                sl = round(cmp - (1.5 * atr), 2)
-                rsi = round(float(df_search.iloc[-1]['RSI']), 1)
-                
-                m1, m2, m3, m4 = st.columns(4)
-                m1.metric("CMP", f"₹{round(cmp, 2)}")
-                m2.metric(f"Target +{target_pct_choice}%", f"₹{tgt}")
-                m3.metric("ATR Stop-Loss", f"₹{sl}")
-                m4.metric("RSI (14)", f"{rsi}")
-                render_chart(df_search, searched_stock, tgt, sl)
-
-st.markdown("---")
-
-# 🚀 SCREENER SECTION
-st.subheader("⚡ Automated Momentum Screener")
-if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
-    smart_api = get_angel_client()
-    if not smart_api:
-        st.error("Angel One session fail ho gaya. Secrets check karein.")
-    else:
-        with st.spinner("Screening high momentum setups..."):
-            all_results = []
-            candles_store = {}
-            progress = st.progress(0)
-            
-            scan_universe = list(MASTER_STOCKS.items())[:25]
-            for idx, (sym, token) in enumerate(scan_universe):
-                progress.progress((idx + 1) / len(scan_universe))
-                try:
-                    df = fetch_and_prepare_df(smart_api, token)
-                    if df is None:
-                        continue
-                    last, prev = df.iloc[-1], df.iloc[-2]
-                    cmp, ema20, ema50 = float(last['Close']), float(last['EMA20']), float(last['EMA50'])
-                    rsi = float(last['RSI'])
-                    vol = float(last['Volume'])
-                    avg_vol = float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
-                    atr = float(last['ATR']) if not pd.isna(last['ATR']) else (cmp * 0.02)
-                    
-                    score = 0
-                    if cmp > ema20 > ema50:
-                        score += 35
-                    elif cmp > ema20:
-                        score += 20
-                    
-                    if 50 <= rsi <= 70:
-                        score += 30
-                    elif 45 <= rsi < 50:
-                        score += 15
-                    
-                    vol_ratio = vol / avg_vol
-                    if vol_ratio >= 1.2:
-                        score += 25
-                    elif vol_ratio >= 1.0:
-                        score += 15
-                    
-                    if cmp > float(prev['High']):
-                        score += 10
-                    
-                    if score >= min_score:
-                        risk_amt = account_capital * (risk_per_trade_pct / 100.0)
-                        stop_loss = round(cmp - (1.5 * atr), 2)
-                        risk_per_share = cmp - stop_loss
-                        qty = int(risk_amt // risk_per_share) if risk_per_share > 0 else 0
-                        trade_capital = round(qty * cmp, 2)
-                        target_price = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
-                        
-                        candles_store[sym] = df
-                        all_results.append({
-                            "Symbol": sym,
-                            "Score": f"{score}%",
-                            "CMP (₹)": round(cmp, 2),
-                            f"Target +{target_pct_choice}%": target_price,
-                            "Smart SL": stop_loss,
-                            "RSI": round(rsi, 1),
-                            "Vol Ratio": f"{round(vol_ratio, 2)}x",
-                            "Position Qty": qty,
-                            "Deploy Cap (₹)": trade_capital,
-                            "_score": score
-                        })
-                except Exception:
-                    continue
-
-            progress.empty()
-            if all_results:
-                all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
-                for item in all_results:
-                    del item['_score']
-                st.session_state["adv_results"] = all_results
-                st.session_state["adv_candles"] = candles_store
-
-if "adv_results" in st.session_state:
-    data = st.session_state["adv_results"]
-    if data:
-        st.success(f"🎯 Total {len(data)} Stocks Filtered!")
-        st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
-        
+target_pct_c
