@@ -1,11 +1,12 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
 
-st.set_page_config(page_title="Swing Screener Pro", layout="wide")
-st.title("🎯 15-Day Swing Screener (10% Target Setup)")
-st.caption("Filters high-momentum stocks with Native Interactive Candlestick Charts")
+st.set_page_config(page_title="Pro Live Swing Screener", layout="wide")
+st.title("🎯 15-Day Swing Screener + Live Chart")
+st.caption("Uptrend + RSI + Volume Momentum Screen with Live Interactive Charts")
 
 WATCHLIST = [
     "TATAMOTORS.NS", "RELIANCE.NS", "SBIN.NS", "INFY.NS", "ICICIBANK.NS", 
@@ -24,8 +25,9 @@ def calculate_rsi(series, period=14):
     rs = gain / (loss.replace(0, 0.0001))
     return 100 - (100 / (1 + rs))
 
+# Scan Button
 if st.button("🚀 Scan Market Now", use_container_width=True):
-    with st.spinner("Analyzing stocks and technical setups..."):
+    with st.spinner("Analyzing momentum setups..."):
         all_results = []
         progress_bar = st.progress(0)
 
@@ -34,7 +36,6 @@ if st.button("🚀 Scan Market Now", use_container_width=True):
             try:
                 t = yf.Ticker(ticker)
                 df = t.history(period="6mo", interval="1d")
-                
                 if df.empty or len(df) < 50:
                     continue
 
@@ -52,94 +53,79 @@ if st.button("🚀 Scan Market Now", use_container_width=True):
                 avg_vol = float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
 
                 score = 0
-                if cmp > ema20 > ema50:
-                    score += 40
-                elif cmp > ema20:
-                    score += 20
-                    
-                if 50 <= rsi <= 72:
-                    score += 30
-                elif 45 <= rsi < 50:
-                    score += 15
+                if cmp > ema20 > ema50: score += 40
+                elif cmp > ema20: score += 20
+                if 50 <= rsi <= 72: score += 30
+                elif 45 <= rsi < 50: score += 15
 
                 vol_ratio = vol / avg_vol
-                if vol_ratio >= 1.2:
-                    score += 30
-                elif vol_ratio >= 0.9:
-                    score += 15
+                if vol_ratio >= 1.2: score += 30
+                elif vol_ratio >= 0.9: score += 15
 
                 if score >= 60:
+                    clean_sym = ticker.replace(".NS", "")
                     all_results.append({
-                        "Stock": ticker.replace(".NS", ""),
+                        "Stock": clean_sym,
                         "Ticker": ticker,
-                        "Setup Strength": f"{score}%",
+                        "Score": f"{score}%",
                         "CMP (₹)": round(cmp, 2),
                         "Target 10% (₹)": round(cmp * 1.10, 2),
-                        "Stop-Loss 5% (₹)": round(cmp * 0.95, 2),
+                        "SL 5% (₹)": round(cmp * 0.95, 2),
                         "RSI": round(rsi, 1),
-                        "Volume Ratio": f"{round(vol_ratio, 2)}x",
                         "_score": score
                     })
             except Exception:
                 continue
 
         progress_bar.empty()
-        
         if all_results:
             all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
-            for item in all_results:
-                del item['_score']
-        
+            for item in all_results: del item['_score']
         st.session_state["stocks_data"] = all_results
 
-# Display Section
+# Display Table & Live Chart
 if "stocks_data" in st.session_state:
     data = st.session_state["stocks_data"]
     if data:
-        st.success(f"🎯 Total {len(data)} Stocks Filtered!")
+        st.success(f"🎯 Total {len(data)} Setups Found!")
         display_df = pd.DataFrame(data).drop(columns=["Ticker"])
         st.dataframe(display_df, use_container_width=True, hide_index=True)
 
         st.markdown("---")
-        st.subheader("📊 Direct Candlestick Chart View")
+        st.subheader("📈 Live Interactive Chart")
 
-        stock_symbols = [item["Stock"] for item in data]
-        selected_stock = st.selectbox("Chart dekhne ke liye stock chunein:", stock_symbols)
-        
-        # Selected stock details
-        selected_item = next(item for item in data if item["Stock"] == selected_stock)
-        target_val = selected_item["Target 10% (₹)"]
-        sl_val = selected_item["Stop-Loss 5% (₹)"]
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            selected_stock = st.selectbox("Stock chunein:", [item["Stock"] for item in data])
+        with col2:
+            timeframe = st.selectbox("Timeframe:", ["Daily (D)", "1 Hour (60)", "15 Minute (15)"])
 
-        # Fetch candle data for selected stock
-        hist = yf.Ticker(selected_item["Ticker"]).history(period="3mo", interval="1d")
+        tf_code = "D" if "Daily" in timeframe else ("60" if "1 Hour" in timeframe else "15")
 
-        # Native Candlestick Chart
-        fig = go.Figure(data=[go.Candlestick(
-            x=hist.index,
-            open=hist['Open'],
-            high=hist['High'],
-            low=hist['Low'],
-            close=hist['Close'],
-            name=selected_stock
-        )])
-
-        # Target (10%) & Stop-loss (5%) horizontal lines
-        fig.add_hline(y=target_val, line_dash="dash", line_color="green", annotation_text=f"Target 10%: ₹{target_val}")
-        fig.add_hline(y=sl_val, line_dash="dash", line_color="red", annotation_text=f"SL 5%: ₹{sl_val}")
-
-        fig.update_layout(
-            title=f"{selected_stock} Daily Chart (Target & SL Levels)",
-            yaxis_title="Price (₹)",
-            xaxis_rangeslider_visible=False,
-            height=450,
-            margin=dict(l=20, r=20, t=40, b=20)
+        # Live Embedded TradingView Frame (Direct Iframe - No Restrictions)
+        tv_embed_url = (
+            f"https://s.tradingview.com/widgetembed/?"
+            f"symbol=NSE%3A{selected_stock}"
+            f"&interval={tf_code}"
+            f"&theme=dark"
+            f"&style=1"
+            f"&timezone=Asia%2FKolkata"
+            f"&withdateranges=1"
+            f"&hideideas=1"
         )
 
-        st.plotly_chart(fig, use_container_width=True)
-
-        # TradingView link for external detailed view
-        st.link_button(f"🌐 Open {selected_stock} in TradingView App/Site", f"https://in.tradingview.com/chart/?symbol=NSE:{selected_stock}")
-    else:
-        st.warning("Aaj koi setup match nahi hua.")
+        components.html(
+            f"""
+            <iframe 
+                src="{tv_embed_url}" 
+                width="100%" 
+                height="520" 
+                frameborder="0" 
+                allowtransparency="true" 
+                scrolling="no" 
+                style="border-radius: 10px;">
+            </iframe>
+            """,
+            height=540
+        )
         
