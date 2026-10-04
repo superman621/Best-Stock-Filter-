@@ -12,7 +12,7 @@ st.set_page_config(
     page_title="Sandeep Kumar | Pro Terminal",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # State initialization
@@ -20,143 +20,6 @@ if "user" not in st.session_state:
     st.session_state["user"] = None
 if "auth_mode" not in st.session_state:
     st.session_state["auth_mode"] = "login"
-
-# Custom Styling (Image Jaisa Glassmorphism + Background)
-st.markdown("""
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-    /* Streamlit Chrome & Headers Hide */
-    #MainMenu, header, footer {visibility: hidden !important; display: none !important;}
-    [data-testid="stToolbar"], [data-testid="stHeader"] {display: none !important;}
-    [data-testid="manage-app-button"], .stAppDeployButton {display: none !important; visibility: hidden !important;}
-    div[class*="viewerBadge"], iframe[title="Manage app"], div[data-testid="stStatusWidget"] {display: none !important;}
-
-    /* Global Dark Theme */
-    .stApp { 
-        background-color: #080a0f; 
-        color: #f1f5f9; 
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    }
-    section[data-testid="stSidebar"] { 
-        background-color: #0f131c; 
-        border-right: 1px solid #1e2638; 
-    }
-
-    /* Vector Blue Night Login Canvas */
-    .login-container {
-        min-height: 82vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        background: radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.9) 0%, rgba(200, 230, 255, 0.45) 14%, rgba(25, 118, 210, 0.6) 30%, rgba(13, 27, 62, 0.95) 75%, #070e1e 100%),
-                    linear-gradient(180deg, #1976d2 0%, #0d2847 50%, #050d1a 100%);
-        border-radius: 26px;
-        padding: 40px 15px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
-    }
-
-    /* Glowing Moon */
-    .login-container::before {
-        content: "";
-        position: absolute;
-        top: 25px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 100px;
-        height: 100px;
-        background: radial-gradient(circle, #ffffff 40%, rgba(255, 255, 255, 0.8) 70%, rgba(255, 255, 255, 0) 100%);
-        border-radius: 50%;
-        filter: blur(0.5px);
-        box-shadow: 0 0 45px rgba(255, 255, 255, 0.85);
-        pointer-events: none;
-        z-index: 1;
-    }
-
-    /* Glassmorphism Form Card */
-    div[data-testid="stForm"] {
-        position: relative;
-        z-index: 2;
-        background: rgba(255, 255, 255, 0.10) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.22) !important;
-        border-radius: 24px !important;
-        padding: 35px 28px !important;
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45) !important;
-    }
-
-    /* Pill-Shaped Inputs */
-    .stTextInput div[data-baseweb="input"] {
-        background-color: rgba(255, 255, 255, 0.18) !important;
-        border: 1px solid rgba(255, 255, 255, 0.28) !important;
-        border-radius: 30px !important;
-        color: #ffffff !important;
-        transition: all 0.3s ease !important;
-    }
-    .stTextInput div[data-baseweb="input"]:focus-within {
-        border-color: #2196f3 !important;
-        background-color: rgba(255, 255, 255, 0.26) !important;
-        box-shadow: 0 0 15px rgba(33, 150, 243, 0.5) !important;
-    }
-    .stTextInput input {
-        color: #ffffff !important;
-        font-size: 0.95rem !important;
-    }
-    .stTextInput input::placeholder {
-        color: rgba(255, 255, 255, 0.7) !important;
-    }
-
-    /* Blue Gradient Button */
-    .stButton > button {
-        background: linear-gradient(135deg, #1e88e5 0%, #00b0ff 100%) !important;
-        color: #ffffff !important;
-        border: none !important;
-        padding: 0.72rem 1.5rem !important;
-        font-weight: 700 !important;
-        font-size: 1rem !important;
-        border-radius: 30px !important;
-        width: 100% !important;
-        letter-spacing: 0.5px !important;
-        box-shadow: 0 6px 20px rgba(0, 176, 255, 0.35) !important;
-        transition: all 0.3s ease !important;
-    }
-    .stButton > button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 10px 25px rgba(0, 176, 255, 0.6) !important;
-    }
-
-    /* Switch Auth Button Styling */
-    div.row-widget.stButton > button[key="switch_auth_btn"] {
-        background: transparent !important;
-        border: none !important;
-        color: rgba(255, 255, 255, 0.85) !important;
-        box-shadow: none !important;
-        font-size: 0.85rem !important;
-        margin-top: 10px !important;
-    }
-    div.row-widget.stButton > button[key="switch_auth_btn"]:hover {
-        color: #ffffff !important;
-        text-decoration: underline !important;
-        transform: none !important;
-    }
-
-    /* Dashboard Metrics */
-    div[data-testid="stMetric"] {
-        background-color: #111622;
-        border: 1px solid #1e2638;
-        padding: 14px 18px;
-        border-radius: 10px;
-    }
-    div[data-testid="stMetric"] label { color: #8b9bb4 !important; font-size: 0.8rem; }
-    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-        color: #00d2c4 !important;
-        font-family: monospace;
-        font-weight: 700;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 # Supabase Auth Client Init
 @st.cache_resource
@@ -167,11 +30,118 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# ================= AUTHENTICATION GATEWAY =================
+# ================= LOGIN SCREEN THEME (APPLIED DIRECTLY TO PAGE) =================
 if st.session_state["user"] is None:
-    st.markdown("<div class='login-container'>", unsafe_allow_html=True)
-    
-    _, col_auth, _ = st.columns([1, 1.25, 1])
+    st.markdown("""
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Streamlit Default Headers Hide */
+        #MainMenu, header, footer, [data-testid="stToolbar"], [data-testid="stHeader"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* Pure Screen Par Vector Blue Night Background */
+        .stApp {
+            background: radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.95) 0%, rgba(144, 202, 249, 0.45) 12%, rgba(25, 118, 210, 0.6) 28%, rgba(13, 37, 72, 0.95) 65%, #07111e 100%),
+                        linear-gradient(180deg, #1e88e5 0%, #0d2847 45%, #050d1a 100%) !important;
+            min-height: 100vh;
+        }
+
+        /* Floating Moon Glow */
+        .stApp::before {
+            content: "";
+            position: fixed;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 110px;
+            height: 110px;
+            background: radial-gradient(circle, #ffffff 40%, rgba(255, 255, 255, 0.8) 65%, rgba(255, 255, 255, 0) 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.85);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Streamlit Form Ko Exact Glassmorphic Card Banaya */
+        div[data-testid="stForm"] {
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.12) !important;
+            backdrop-filter: blur(25px) !important;
+            -webkit-backdrop-filter: blur(25px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
+            border-radius: 28px !important;
+            padding: 38px 32px 30px 32px !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
+            margin-top: 45px;
+        }
+
+        /* Pill Rounded Inputs */
+        .stTextInput div[data-baseweb="input"] {
+            background-color: rgba(255, 255, 255, 0.22) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            border-radius: 35px !important;
+            color: #ffffff !important;
+            height: 48px;
+            padding-left: 8px;
+            transition: all 0.3s ease !important;
+        }
+
+        .stTextInput div[data-baseweb="input"]:focus-within {
+            background-color: rgba(255, 255, 255, 0.32) !important;
+            border-color: #00b0ff !important;
+            box-shadow: 0 0 15px rgba(0, 176, 255, 0.6) !important;
+        }
+
+        .stTextInput input {
+            color: #ffffff !important;
+            font-size: 0.95rem !important;
+        }
+
+        .stTextInput input::placeholder {
+            color: rgba(255, 255, 255, 0.75) !important;
+        }
+
+        /* Pill Blue Action Button */
+        div[data-testid="stForm"] .stButton > button {
+            background: linear-gradient(135deg, #1e88e5 0%, #00b0ff 100%) !important;
+            color: #ffffff !important;
+            border: none !important;
+            height: 46px;
+            font-weight: 700 !important;
+            font-size: 1.05rem !important;
+            border-radius: 35px !important;
+            width: 100% !important;
+            box-shadow: 0 6px 20px rgba(0, 176, 255, 0.4) !important;
+            transition: all 0.3s ease !important;
+        }
+
+        div[data-testid="stForm"] .stButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 10px 25px rgba(0, 176, 255, 0.65) !important;
+        }
+
+        /* Bottom Switch Link Styling */
+        div[data-testid="stVerticalBlock"] > div.stButton > button {
+            background: transparent !important;
+            border: none !important;
+            color: rgba(255, 255, 255, 0.85) !important;
+            box-shadow: none !important;
+            font-size: 0.9rem !important;
+            margin-top: 5px;
+        }
+        div[data-testid="stVerticalBlock"] > div.stButton > button:hover {
+            color: #ffffff !important;
+            text-decoration: underline !important;
+            background: transparent !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Center Aligning Login Box
+    _, col_auth, _ = st.columns([1, 1.15, 1])
     with col_auth:
         is_login = st.session_state["auth_mode"] == "login"
         card_title = "Login" if is_login else "Register"
@@ -179,25 +149,24 @@ if st.session_state["user"] is None:
         with st.form("auth_form"):
             # Header Title inside card[span_1](start_span)[span_1](end_span)
             st.markdown(f"""
-            <div style='text-align: center; margin-bottom: 25px;'>
-                <h1 style='font-size: 2.2rem; font-weight: 700; color: #ffffff; margin: 0; letter-spacing: 0.5px;'>{card_title}</h1>
+            <div style='text-align: center; margin-bottom: 24px;'>
+                <h1 style='font-size: 2.3rem; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: 0.5px;'>{card_title}</h1>
             </div>
             """, unsafe_allow_html=True)
             
-            # Form Inputs with pill style[span_2](start_span)[span_2](end_span)
-            email = st.text_input("Username / Email", placeholder="👤   Username", label_visibility="collapsed")
-            st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
-            password = st.text_input("Password", type="password", placeholder="🔒   Password", label_visibility="collapsed")
+            # Form Inputs with icons[span_2](start_span)[span_2](end_span)
+            email = st.text_input("Username", placeholder="👤  CodeByGaurav / email", label_visibility="collapsed")
+            st.markdown("<div style='height: 2px;'></div>", unsafe_allow_html=True)
+            password = st.text_input("Password", type="password", placeholder="🔒  ••••••••••••", label_visibility="collapsed")
             
-            # Remember Me & Forgot Password row[span_3](start_span)[span_3](end_span)
+            # Options (Remember me & Forgot Password)[span_3](start_span)[span_3](end_span)
             st.markdown("""
-            <div style='display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: rgba(255, 255, 255, 0.9); margin: 12px 2px 20px 2px;'>
+            <div style='display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: rgba(255, 255, 255, 0.9); margin: 12px 4px 22px 4px;'>
                 <span><i class="fa-solid fa-square-check" style="color: #00b0ff; margin-right: 5px;"></i> Remember me</span>
                 <span style='cursor: pointer;'>Forgot Password</span>
             </div>
             """, unsafe_allow_html=True)
             
-            # Action Button[span_4](start_span)[span_4](end_span)
             submit = st.form_submit_button(card_title)
             
             if submit:
@@ -227,16 +196,42 @@ if st.session_state["user"] is None:
                         except Exception:
                             st.error("❌ Invalid Credentials. Dobara check karein.")
 
-        # Switch Login / Register link[span_5](start_span)[span_5](end_span)
+        # Bottom Switch Button[span_4](start_span)[span_4](end_span)
         switch_text = "Don't have an account? Register" if is_login else "Already have an account? Login"
-        if st.button(switch_text, key="switch_auth_btn"):
+        if st.button(switch_text, key="switch_auth_btn", use_container_width=True):
             st.session_state["auth_mode"] = "register" if is_login else "login"
             st.rerun()
 
-    st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# ================= SCREENER APP (POST-LOGIN ACCESS) =================
+# ================= POST-LOGIN TERMINAL THEME & APP =================
+st.markdown("""
+<style>
+    /* Dark Theme For Terminal Screener */
+    .stApp { 
+        background: #080a0f !important; 
+        color: #f1f5f9 !important; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    }
+    .stApp::before { display: none !important; }
+    section[data-testid="stSidebar"] { 
+        background-color: #0f131c !important; 
+        border-right: 1px solid #1e2638 !important; 
+    }
+    div[data-testid="stMetric"] {
+        background-color: #111622;
+        border: 1px solid #1e2638;
+        padding: 14px 18px;
+        border-radius: 10px;
+    }
+    div[data-testid="stMetric"] label { color: #8b9bb4 !important; font-size: 0.8rem; }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        color: #00d2c4 !important;
+        font-family: monospace;
+        font-weight: 700;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 MASTER_STOCKS = {
     "RELIANCE": "2885", "TCS": "11536", "HDFCBANK": "1333", "INFY": "1594",
@@ -390,6 +385,7 @@ if search_clicked or st.session_state.get("active_search") == searched_stock:
                 render_chart(df_search, searched_stock, tgt, sl)
 
 st.markdown("---")
+
 # 🚀 SCREENER SECTION
 st.subheader("⚡ Automated Momentum Screener")
 if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
@@ -419,58 +415,4 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
                     score = 0
                     if cmp > ema20 > ema50:
                         score += 35
-                    elif cmp > ema20:
-                        score += 20
-                    
-                    if 50 <= rsi <= 70:
-                        score += 30
-                    elif 45 <= rsi < 50:
-                        score += 15
-                    
-                    vol_ratio = vol / avg_vol
-                    if vol_ratio >= 1.2:
-                        score += 25
-                    elif vol_ratio >= 1.0:
-                        score += 15
-                    
-                    if cmp > float(prev['High']):
-                        score += 10
-                    
-                    if score >= min_score:
-                        risk_amt = account_capital * (risk_per_trade_pct / 100.0)
-                        stop_loss = round(cmp - (1.5 * atr), 2)
-                        risk_per_share = cmp - stop_loss
-                        qty = int(risk_amt // risk_per_share) if risk_per_share > 0 else 0
-                        trade_capital = round(qty * cmp, 2)
-                        target_price = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
-                        
-                        candles_store[sym] = df
-                        all_results.append({
-                            "Symbol": sym,
-                            "Score": f"{score}%",
-                            "CMP (₹)": round(cmp, 2),
-                            f"Target +{target_pct_choice}%": target_price,
-                            "Smart SL": stop_loss,
-                            "RSI": round(rsi, 1),
-                            "Vol Ratio": f"{round(vol_ratio, 2)}x",
-                            "Position Qty": qty,
-                            "Deploy Cap (₹)": trade_capital,
-                            "_score": score
-                        })
-                except Exception:
-                    continue
-
-            progress.empty()
-            if all_results:
-                all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
-                for item in all_results:
-                    del item['_score']
-                st.session_state["adv_results"] = all_results
-                st.session_state["adv_candles"] = candles_store
-
-if "adv_results" in st.session_state:
-    data = st.session_state["adv_results"]
-    if data:
-        st.success(f"🎯 Total {len(data)} Stocks Filtered!")
-        st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
-        
+                    elif cm
