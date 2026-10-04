@@ -27,17 +27,15 @@ supabase = init_supabase()
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
-# Custom High-Contrast Professional & Glassmorphic CSS
+# Custom CSS
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    /* Streamlit Chrome & Headers Hide */
     #MainMenu, header, footer {visibility: hidden !important; display: none !important;}
     [data-testid="stToolbar"], [data-testid="stHeader"] {display: none !important;}
     [data-testid="manage-app-button"], .stAppDeployButton {display: none !important; visibility: hidden !important;}
     div[class*="viewerBadge"], iframe[title="Manage app"], div[data-testid="stStatusWidget"] {display: none !important;}
 
-    /* Global Dark Theme */
     .stApp { 
         background-color: #080a0f; 
         color: #f1f5f9; 
@@ -48,7 +46,6 @@ st.markdown("""
         border-right: 1px solid #1e2638; 
     }
 
-    /* ================= VECTOR BLUE NIGHT LOGIN CANVAS ================= */
     .login-container {
         min-height: 80vh;
         display: flex;
@@ -63,7 +60,6 @@ st.markdown("""
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
     }
 
-    /* Floating Luminous Moon */
     .login-container::before {
         content: "";
         position: absolute;
@@ -80,7 +76,6 @@ st.markdown("""
         z-index: 1;
     }
 
-    /* Glassmorphism Form Card */
     div[data-testid="stForm"] {
         position: relative;
         z-index: 2;
@@ -93,7 +88,6 @@ st.markdown("""
         box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45) !important;
     }
 
-    /* Pill-Shaped Rounded Inputs */
     .stTextInput label {
         color: rgba(255, 255, 255, 0.9) !important;
         font-weight: 600 !important;
@@ -119,7 +113,6 @@ st.markdown("""
         color: rgba(255, 255, 255, 0.65) !important;
     }
 
-    /* Pill-Shaped Sky Blue Login Button */
     .stButton > button {
         background: linear-gradient(135deg, #1e88e5 0%, #00b0ff 100%) !important;
         color: #ffffff !important;
@@ -138,13 +131,11 @@ st.markdown("""
         box-shadow: 0 10px 25px rgba(0, 176, 255, 0.6) !important;
     }
 
-    /* Radio Filter Styling */
     div[data-testid="stRadio"] label {
         color: #e2e8f0 !important;
         font-weight: 500 !important;
     }
 
-    /* Dashboard Metrics */
     div[data-testid="stMetric"] {
         background-color: #111622;
         border: 1px solid #1e2638;
@@ -422,4 +413,10 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
                     if cmp > float(prev['High']):
                         score += 10
                     
-          
+                    if score >= min_score:
+                        risk_amt = account_capital * (risk_per_trade_pct / 100.0)
+                        stop_loss = round(cmp - (1.5 * atr), 2)
+                        risk_per_share = cmp - stop_loss
+                        qty = int(risk_amt // risk_per_share) if risk_per_share > 0 else 0
+                        trade_capital = round(qty * cmp, 2)
+         
