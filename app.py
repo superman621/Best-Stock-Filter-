@@ -15,27 +15,23 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Supabase Auth Client Init
-@st.cache_resource
-def init_supabase() -> Client:
-    url = st.secrets["SUPABASE_URL"].strip().rstrip("/")
-    key = st.secrets["SUPABASE_KEY"].strip()
-    return create_client(url, key)
-
-supabase = init_supabase()
-
+# State initialization
 if "user" not in st.session_state:
     st.session_state["user"] = None
+if "auth_mode" not in st.session_state:
+    st.session_state["auth_mode"] = "login"
 
-# Custom CSS
+# Custom Styling (Image Jaisa Glassmorphism + Background)
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
+    /* Streamlit Chrome & Headers Hide */
     #MainMenu, header, footer {visibility: hidden !important; display: none !important;}
     [data-testid="stToolbar"], [data-testid="stHeader"] {display: none !important;}
     [data-testid="manage-app-button"], .stAppDeployButton {display: none !important; visibility: hidden !important;}
     div[class*="viewerBadge"], iframe[title="Manage app"], div[data-testid="stStatusWidget"] {display: none !important;}
 
+    /* Global Dark Theme */
     .stApp { 
         background-color: #080a0f; 
         color: #f1f5f9; 
@@ -46,20 +42,22 @@ st.markdown("""
         border-right: 1px solid #1e2638; 
     }
 
+    /* Vector Blue Night Login Canvas */
     .login-container {
-        min-height: 80vh;
+        min-height: 82vh;
         display: flex;
         align-items: center;
         justify-content: center;
         position: relative;
         background: radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.9) 0%, rgba(200, 230, 255, 0.45) 14%, rgba(25, 118, 210, 0.6) 30%, rgba(13, 27, 62, 0.95) 75%, #070e1e 100%),
                     linear-gradient(180deg, #1976d2 0%, #0d2847 50%, #050d1a 100%);
-        border-radius: 24px;
+        border-radius: 26px;
         padding: 40px 15px;
         border: 1px solid rgba(255, 255, 255, 0.15);
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
     }
 
+    /* Glowing Moon */
     .login-container::before {
         content: "";
         position: absolute;
@@ -76,6 +74,7 @@ st.markdown("""
         z-index: 1;
     }
 
+    /* Glassmorphism Form Card */
     div[data-testid="stForm"] {
         position: relative;
         z-index: 2;
@@ -83,16 +82,12 @@ st.markdown("""
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
         border: 1px solid rgba(255, 255, 255, 0.22) !important;
-        border-radius: 22px !important;
+        border-radius: 24px !important;
         padding: 35px 28px !important;
         box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45) !important;
     }
 
-    .stTextInput label {
-        color: rgba(255, 255, 255, 0.9) !important;
-        font-weight: 600 !important;
-        font-size: 0.85rem !important;
-    }
+    /* Pill-Shaped Inputs */
     .stTextInput div[data-baseweb="input"] {
         background-color: rgba(255, 255, 255, 0.18) !important;
         border: 1px solid rgba(255, 255, 255, 0.28) !important;
@@ -110,9 +105,10 @@ st.markdown("""
         font-size: 0.95rem !important;
     }
     .stTextInput input::placeholder {
-        color: rgba(255, 255, 255, 0.65) !important;
+        color: rgba(255, 255, 255, 0.7) !important;
     }
 
+    /* Blue Gradient Button */
     .stButton > button {
         background: linear-gradient(135deg, #1e88e5 0%, #00b0ff 100%) !important;
         color: #ffffff !important;
@@ -131,11 +127,22 @@ st.markdown("""
         box-shadow: 0 10px 25px rgba(0, 176, 255, 0.6) !important;
     }
 
-    div[data-testid="stRadio"] label {
-        color: #e2e8f0 !important;
-        font-weight: 500 !important;
+    /* Switch Auth Button Styling */
+    div.row-widget.stButton > button[key="switch_auth_btn"] {
+        background: transparent !important;
+        border: none !important;
+        color: rgba(255, 255, 255, 0.85) !important;
+        box-shadow: none !important;
+        font-size: 0.85rem !important;
+        margin-top: 10px !important;
+    }
+    div.row-widget.stButton > button[key="switch_auth_btn"]:hover {
+        color: #ffffff !important;
+        text-decoration: underline !important;
+        transform: none !important;
     }
 
+    /* Dashboard Metrics */
     div[data-testid="stMetric"] {
         background-color: #111622;
         border: 1px solid #1e2638;
@@ -151,53 +158,64 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Supabase Auth Client Init
+@st.cache_resource
+def init_supabase() -> Client:
+    url = st.secrets["SUPABASE_URL"].strip().rstrip("/")
+    key = st.secrets["SUPABASE_KEY"].strip()
+    return create_client(url, key)
+
+supabase = init_supabase()
+
 # ================= AUTHENTICATION GATEWAY =================
 if st.session_state["user"] is None:
     st.markdown("<div class='login-container'>", unsafe_allow_html=True)
     
     _, col_auth, _ = st.columns([1, 1.25, 1])
     with col_auth:
-        st.markdown("""
-        <div style='text-align: center; margin-bottom: 22px; position: relative; z-index: 2;'>
-            <h1 style='font-size: 2.3rem; font-weight: 800; color: #ffffff; margin-bottom: 2px; letter-spacing: 0.5px;'>Login</h1>
-            <p style='color: rgba(255, 255, 255, 0.8); font-size: 0.85rem; margin: 0;'>Sandeep Kumar | Pro Quantitative Terminal</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        auth_mode = st.radio("Access Level", ["Existing Member (Sign In)", "New Member (Sign Up)"], horizontal=True, label_visibility="collapsed")
+        is_login = st.session_state["auth_mode"] == "login"
+        card_title = "Login" if is_login else "Register"
         
         with st.form("auth_form"):
-            email = st.text_input("EMAIL ADDRESS", placeholder="👤  trader@quantdesk.com")
-            password = st.text_input("PASSWORD", type="password", placeholder="🔒  ••••••••••••")
-            
-            st.markdown("""
-            <div style='display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: rgba(255, 255, 255, 0.85); margin: 6px 2px 18px 2px;'>
-                <span><i class="fa-solid fa-square-check" style="color: #00b0ff; margin-right: 4px;"></i> Remember me</span>
-                <span style='color: rgba(255, 255, 255, 0.85); cursor: pointer;'>Forgot Password</span>
+            # Header Title inside card[span_1](start_span)[span_1](end_span)
+            st.markdown(f"""
+            <div style='text-align: center; margin-bottom: 25px;'>
+                <h1 style='font-size: 2.2rem; font-weight: 700; color: #ffffff; margin: 0; letter-spacing: 0.5px;'>{card_title}</h1>
             </div>
             """, unsafe_allow_html=True)
             
-            btn_title = "Login" if "Sign In" in auth_mode else "Register"
-            submit = st.form_submit_button(btn_title)
+            # Form Inputs with pill style[span_2](start_span)[span_2](end_span)
+            email = st.text_input("Username / Email", placeholder="👤   Username", label_visibility="collapsed")
+            st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+            password = st.text_input("Password", type="password", placeholder="🔒   Password", label_visibility="collapsed")
             
+            # Remember Me & Forgot Password row[span_3](start_span)[span_3](end_span)
             st.markdown("""
-            <div style='text-align: center; margin-top: 14px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);'>
-                Don't have an account? <span style='color: #ffffff; font-weight: 600;'>Register</span>
+            <div style='display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: rgba(255, 255, 255, 0.9); margin: 12px 2px 20px 2px;'>
+                <span><i class="fa-solid fa-square-check" style="color: #00b0ff; margin-right: 5px;"></i> Remember me</span>
+                <span style='cursor: pointer;'>Forgot Password</span>
             </div>
             """, unsafe_allow_html=True)
+            
+            # Action Button[span_4](start_span)[span_4](end_span)
+            submit = st.form_submit_button(card_title)
             
             if submit:
                 if not email or not password:
-                    st.error("⚠️ Email aur Password dono fill karein.")
+                    st.error("⚠️ Username/Email aur Password dono fill karein.")
                 elif len(password) < 6:
                     st.error("⚠️ Password minimum 6 characters ka hona chahiye.")
                 else:
                     clean_email = email.replace("👤", "").strip()
-                    if "Sign Up" in auth_mode:
+                    if "@" not in clean_email:
+                        clean_email = f"{clean_email}@terminal.com"
+                    
+                    if not is_login:
                         try:
                             res = supabase.auth.sign_up({"email": clean_email, "password": password})
                             if res.user:
-                                st.success("✅ Account ban gaya! Ab Sign In select karke login karein.")
+                                st.success("✅ Account ban gaya! Ab Login par click karke login karein.")
+                                st.session_state["auth_mode"] = "login"
                         except Exception as e:
                             st.error(f"Sign Up Failed: {str(e)}")
                     else:
@@ -207,7 +225,13 @@ if st.session_state["user"] is None:
                                 st.session_state["user"] = res.user.email
                                 st.rerun()
                         except Exception:
-                            st.error("❌ Invalid Email or Password. Dobara check karein.")
+                            st.error("❌ Invalid Credentials. Dobara check karein.")
+
+        # Switch Login / Register link[span_5](start_span)[span_5](end_span)
+        switch_text = "Don't have an account? Register" if is_login else "Already have an account? Login"
+        if st.button(switch_text, key="switch_auth_btn"):
+            st.session_state["auth_mode"] = "register" if is_login else "login"
+            st.rerun()
 
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
@@ -308,7 +332,66 @@ def render_chart(df, symbol, target_val, sl_val):
     fig.update_yaxes(gridcolor='#1e2638', fixedrange=True, range=[10, 90], row=3, col=1)
     fig.update_xaxes(gridcolor='#1e2638')
     st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
-    # 🚀 SCREENER SECTION
+
+# --- TOP STATUS BAR ---
+c_title, c_badge = st.columns([3, 1])
+with c_title:
+    st.markdown("<h2 style='margin-bottom:0;'>⚡ SANDEEP KUMAR <span style='font-size:1rem;color:#00d2c4;'>PRO TERMINAL</span></h2>", unsafe_allow_html=True)
+    st.caption(f"Authenticated as: {st.session_state['user']} • Angel One Live Exchange Engine")
+with c_badge:
+    st.markdown("<div style='text-align:right;padding-top:10px;'><span style='background:#102a27;color:#00e699;padding:4px 12px;border-radius:12px;font-size:0.75rem;border:1px solid #00e699;'>LIVE SYNC</span></div>", unsafe_allow_html=True)
+
+# Sidebar with User Info & Logout
+st.sidebar.markdown(f"**Member:** `{st.session_state['user']}`")
+if st.sidebar.button("🚪 Log Out", use_container_width=True):
+    supabase.auth.sign_out()
+    st.session_state["user"] = None
+    st.rerun()
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🎛️ Risk Engine")
+account_capital = st.sidebar.number_input("Portfolio Capital (₹)", value=100000, step=25000)
+risk_per_trade_pct = st.sidebar.slider("Risk Per Trade (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
+target_pct_choice = st.sidebar.slider("Target Return (%)", min_value=8, max_value=15, value=10, step=1)
+min_score = st.sidebar.slider("Minimum Setup Score", min_value=50, max_value=85, value=60, step=5)
+
+st.markdown("---")
+
+# 🔍 SEARCH BAR SECTION
+st.subheader("🔍 Instant Stock Search & Chart Inspector")
+all_stock_names = sorted(list(MASTER_STOCKS.keys()))
+col_search, col_btn = st.columns([3, 1])
+with col_search:
+    searched_stock = st.selectbox("Stock search karein (Jaise: RELIANCE, TATAMOTORS, ZOMATO):", all_stock_names)
+with col_btn:
+    st.write("")
+    st.write("")
+    search_clicked = st.button("📊 Open Chart", use_container_width=True)
+
+if search_clicked or st.session_state.get("active_search") == searched_stock:
+    st.session_state["active_search"] = searched_stock
+    smart_api = get_angel_client()
+    if smart_api:
+        with st.spinner(f"Fetching technicals for {searched_stock}..."):
+            token = MASTER_STOCKS[searched_stock]
+            df_search = fetch_and_prepare_df(smart_api, token)
+            if df_search is not None:
+                cmp = float(df_search.iloc[-1]['Close'])
+                atr = float(df_search.iloc[-1]['ATR']) if not pd.isna(df_search.iloc[-1]['ATR']) else (cmp * 0.02)
+                tgt = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
+                sl = round(cmp - (1.5 * atr), 2)
+                rsi = round(float(df_search.iloc[-1]['RSI']), 1)
+                
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("CMP", f"₹{round(cmp, 2)}")
+                m2.metric(f"Target +{target_pct_choice}%", f"₹{tgt}")
+                m3.metric("ATR Stop-Loss", f"₹{sl}")
+                m4.metric("RSI (14)", f"{rsi}")
+                render_chart(df_search, searched_stock, tgt, sl)
+
+st.markdown("---")
+
+# 🚀 SCREENER SECTION
 st.subheader("⚡ Automated Momentum Screener")
 if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
     smart_api = get_angel_client()
@@ -335,60 +418,4 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
                     atr = float(last['ATR']) if not pd.isna(last['ATR']) else (cmp * 0.02)
                     
                     score = 0
-                    if cmp > ema20 > ema50:
-                        score += 35
-                    elif cmp > ema20:
-                        score += 20
-                    
-                    if 50 <= rsi <= 70:
-                        score += 30
-                    elif 45 <= rsi < 50:
-                        score += 15
-                    
-                    vol_ratio = vol / avg_vol
-                    if vol_ratio >= 1.2:
-                        score += 25
-                    elif vol_ratio >= 1.0:
-                        score += 15
-                    
-                    if cmp > float(prev['High']):
-                        score += 10
-                    
-                    if score >= min_score:
-                        risk_amt = account_capital * (risk_per_trade_pct / 100.0)
-                        stop_loss = round(cmp - (1.5 * atr), 2)
-                        risk_per_share = cmp - stop_loss
-                        qty = int(risk_amt // risk_per_share) if risk_per_share > 0 else 0
-                        trade_capital = round(qty * cmp, 2)
-                        target_price = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
-                        
-                        candles_store[sym] = df
-                        all_results.append({
-                            "Symbol": sym,
-                            "Score": f"{score}%",
-                            "CMP (₹)": round(cmp, 2),
-                            f"Target +{target_pct_choice}%": target_price,
-                            "Smart SL": stop_loss,
-                            "RSI": round(rsi, 1),
-                            "Vol Ratio": f"{round(vol_ratio, 2)}x",
-                            "Position Qty": qty,
-                            "Deploy Cap (₹)": trade_capital,
-                            "_score": score
-                        })
-                except Exception:
-                    continue
-
-            progress.empty()
-            if all_results:
-                all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
-                for item in all_results:
-                    del item['_score']
-                st.session_state["adv_results"] = all_results
-                st.session_state["adv_candles"] = candles_store
-
-if "adv_results" in st.session_state:
-    data = st.session_state["adv_results"]
-    if data:
-        st.success(f"🎯 Total {len(data)} Stocks Filtered!")
-        st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
-     
+                    if cm
