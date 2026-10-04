@@ -15,82 +15,135 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom High-Contrast Professional CSS
+# Check if user is logged in
+if "user" not in st.session_state:
+    st.session_state["user"] = None
+
+# Custom High-Contrast Professional & Glassmorphic CSS
 st.markdown("""
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     /* Streamlit Chrome & Headers Hide */
-    #MainMenu {visibility: hidden !important; display: none !important;}
-    header {visibility: hidden !important; display: none !important;}
-    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
-    [data-testid="stHeader"] {display: none !important;}
-    footer {visibility: hidden !important; display: none !important;}
-    [data-testid="manage-app-button"] {display: none !important; visibility: hidden !important;}
-    .stAppDeployButton {display: none !important; visibility: hidden !important;}
-    div[class*="viewerBadge"] {display: none !important; visibility: hidden !important;}
-    iframe[title="Manage app"] {display: none !important; visibility: hidden !important;}
-    div[data-testid="stStatusWidget"] {display: none !important;}
+    #MainMenu, header, footer {visibility: hidden !important; display: none !important;}
+    [data-testid="stToolbar"], [data-testid="stHeader"] {display: none !important;}
+    [data-testid="manage-app-button"], .stAppDeployButton {display: none !important; visibility: hidden !important;}
+    div[class*="viewerBadge"], iframe[title="Manage app"], div[data-testid="stStatusWidget"] {display: none !important;}
 
     /* Global Dark Theme */
-    .stApp { background-color: #080a0f; color: #f1f5f9; font-family: 'Inter', sans-serif; }
+    .stApp { 
+        background-color: #080a0f; 
+        color: #f1f5f9; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    }
     section[data-testid="stSidebar"] { background-color: #0f131c; border-right: 1px solid #1e2638; }
-    
-    /* Professional Glassmorphism Login Card */
-    div[data-testid="stForm"] {
-        background: #111622 !important;
-        border: 1px solid #232d42 !important;
-        border-radius: 16px !important;
-        padding: 30px !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+
+    /* ================= LOGIN THEME (IMAGE REPLICATION) ================= */
+    .login-wrapper {
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        background: radial-gradient(circle at 50% 12%, rgba(220, 240, 255, 0.45) 0%, rgba(25, 118, 210, 0.6) 28%, rgba(13, 27, 62, 0.95) 75%, #070e1e 100%),
+                    linear-gradient(180deg, #1976d2 0%, #0c2340 55%, #050d1a 100%);
+        border-radius: 28px;
+        padding: 50px 20px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        animation: fadeIn 0.8s ease-in-out;
     }
 
-    /* Input Fields Fix - Text Har Haal Me Clear Dikhne Ke Liye */
-    .stTextInput label {
-        color: #94a3b8 !important;
-        font-weight: 600 !important;
-        font-size: 0.9rem !important;
-        letter-spacing: 0.3px !important;
+    /* Ambient Moon / Glowing Orb */
+    .login-wrapper::before {
+        content: "";
+        position: absolute;
+        top: 28px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 110px;
+        height: 110px;
+        background: radial-gradient(circle, #ffffff 30%, rgba(255, 255, 255, 0.8) 60%, rgba(255, 255, 255, 0) 100%);
+        border-radius: 50%;
+        filter: blur(1px);
+        box-shadow: 0 0 45px rgba(255, 255, 255, 0.85);
+        z-index: 1;
+        pointer-events: none;
+        animation: pulseMoon 4s ease-in-out infinite alternate;
     }
+
+    @keyframes pulseMoon {
+        0% { transform: translateX(-50%) scale(0.96); opacity: 0.9; }
+        100% { transform: translateX(-50%) scale(1.04); opacity: 1; filter: blur(0.5px); }
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Glassmorphism Login Card Overlay */
+    div[data-testid="stForm"] {
+        position: relative;
+        z-index: 2;
+        background: rgba(255, 255, 255, 0.08) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.22) !important;
+        border-radius: 24px !important;
+        padding: 35px 32px !important;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45) !important;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    div[data-testid="stForm"]:hover {
+        border-color: rgba(255, 255, 255, 0.35) !important;
+        box-shadow: 0 25px 55px rgba(0, 114, 255, 0.25) !important;
+    }
+
+    /* Pill-Shaped Inputs like Reference Image */
     .stTextInput div[data-baseweb="input"] {
-        background-color: #161c2b !important;
-        border: 1px solid #2d384e !important;
-        border-radius: 10px !important;
+        background-color: rgba(255, 255, 255, 0.16) !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        border-radius: 30px !important;
         color: #ffffff !important;
+        padding-left: 10px;
+        transition: all 0.3s ease !important;
     }
+
     .stTextInput div[data-baseweb="input"]:focus-within {
-        border-color: #00d2c4 !important;
-        box-shadow: 0 0 10px rgba(0, 210, 196, 0.2) !important;
+        background-color: rgba(255, 255, 255, 0.24) !important;
+        border-color: #2196f3 !important;
+        box-shadow: 0 0 15px rgba(33, 150, 243, 0.45) !important;
     }
+
     .stTextInput input {
         color: #ffffff !important;
         font-size: 0.95rem !important;
-        caret-color: #00d2c4 !important;
     }
+
     .stTextInput input::placeholder {
-        color: #64748b !important;
+        color: rgba(255, 255, 255, 0.65) !important;
     }
 
-    /* Radio Button Labels Styling */
-    div[data-testid="stRadio"] label {
-        color: #e2e8f0 !important;
-        font-weight: 500 !important;
-    }
-
-    /* Neon Gradient Buttons */
+    /* Pill Blue Gradient Button */
     .stButton > button {
-        background: linear-gradient(135deg, #0052cc 0%, #00c49f 100%) !important;
+        background: linear-gradient(135deg, #1e88e5 0%, #00b0ff 100%) !important;
         color: #ffffff !important;
         border: none !important;
-        padding: 0.7rem 1.5rem !important;
+        padding: 0.75rem 1.5rem !important;
         font-weight: 700 !important;
-        font-size: 0.95rem !important;
-        border-radius: 10px !important;
+        font-size: 1rem !important;
+        border-radius: 30px !important;
         width: 100% !important;
         letter-spacing: 0.5px !important;
+        box-shadow: 0 6px 20px rgba(0, 176, 255, 0.35) !important;
         transition: all 0.3s ease !important;
     }
+
     .stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px rgba(0, 196, 159, 0.45) !important;
+        box-shadow: 0 10px 25px rgba(0, 176, 255, 0.6) !important;
     }
 
     /* Dashboard Metrics */
@@ -118,37 +171,41 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-if "user" not in st.session_state:
-    st.session_state["user"] = None
-
 # ================= PROFESSIONAL AUTHENTICATION GATEWAY =================
 if st.session_state["user"] is None:
-    st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='login-wrapper'>", unsafe_allow_html=True)
     
-    # Center Column for Login Box
-    _, col_auth, _ = st.columns([1, 1.3, 1])
+    _, col_auth, _ = st.columns([1, 1.25, 1])
     with col_auth:
         st.markdown("""
-        <div style='text-align: center; margin-bottom: 25px;'>
-            <div style='display: inline-block; background: rgba(0, 210, 196, 0.1); border: 1px solid rgba(0, 210, 196, 0.3); border-radius: 50%; padding: 12px; margin-bottom: 12px;'>
-                <span style='font-size: 1.8rem;'>⚡</span>
-            </div>
-            <h2 style='margin: 0; font-weight: 800; letter-spacing: 0.5px;'>SANDEEP KUMAR</h2>
-            <p style='color: #00d2c4; font-size: 0.85rem; font-weight: 600; margin: 4px 0 0 0; letter-spacing: 1px;'>INSTITUTIONAL SWING TERMINAL</p>
-            <p style='color: #64748b; font-size: 0.8rem; margin-top: 6px;'>Enter your credentials to access live quantitative feeds</p>
+        <div style='text-align: center; margin-bottom: 22px; position: relative; z-index: 2;'>
+            <h1 style='font-size: 2.3rem; font-weight: 800; color: #ffffff; margin-bottom: 4px; letter-spacing: 0.5px;'>Login</h1>
+            <p style='color: rgba(255, 255, 255, 0.75); font-size: 0.85rem; margin: 0;'>Institutional Quantitative Screener</p>
         </div>
         """, unsafe_allow_html=True)
         
         auth_mode = st.radio("Access Level", ["Existing Member (Sign In)", "New Member (Sign Up)"], horizontal=True, label_visibility="collapsed")
         
         with st.form("auth_form"):
-            st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
-            email = st.text_input("EMAIL ADDRESS", placeholder="trader@quantdesk.com")
-            password = st.text_input("PASSWORD", type="password", placeholder="••••••••••••")
+            email = st.text_input("Username / Email", placeholder="👤  CodeByGaurav / email@address.com")
+            password = st.text_input("Password", type="password", placeholder="🔒  ••••••••••••")
             
-            st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-            btn_title = "PROCEED TO TERMINAL" if "Sign In" in auth_mode else "CREATE FREE ACCOUNT"
+            # Options (Remember me & Forgot Password style)
+            st.markdown("""
+            <div style='display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: rgba(255, 255, 255, 0.85); margin: 6px 2px 18px 2px;'>
+                <span><i class="fa-solid fa-square-check" style="color: #00b0ff; margin-right: 4px;"></i> Remember me</span>
+                <span style='color: rgba(255, 255, 255, 0.85); cursor: pointer;'>Forgot Password</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            btn_title = "Login" if "Sign In" in auth_mode else "Register"
             submit = st.form_submit_button(btn_title)
+            
+            st.markdown("""
+            <div style='text-align: center; margin-top: 14px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);'>
+                Don't have an account? <span style='color: #ffffff; font-weight: 600;'>Register</span>
+            </div>
+            """, unsafe_allow_html=True)
             
             if submit:
                 if not email or not password:
@@ -158,21 +215,24 @@ if st.session_state["user"] is None:
                 else:
                     if "Sign Up" in auth_mode:
                         try:
-                            res = supabase.auth.sign_up({"email": email.strip(), "password": password})
+                            clean_email = email.replace("👤", "").strip()
+                            res = supabase.auth.sign_up({"email": clean_email, "password": password})
                             if res.user:
-                                st.success("✅ Account ban gaya! Ab 'Existing Member (Sign In)' select karke login karein.")
+                                st.success("✅ Account ban gaya! Ab Sign In select karke login karein.")
                         except Exception as e:
                             st.error(f"Sign Up Failed: {str(e)}")
                     else:
                         try:
-                            res = supabase.auth.sign_in_with_password({"email": email.strip(), "password": password})
+                            clean_email = email.replace("👤", "").strip()
+                            res = supabase.auth.sign_in_with_password({"email": clean_email, "password": password})
                             if res.user:
                                 st.session_state["user"] = res.user.email
                                 st.rerun()
                         except Exception:
                             st.error("❌ Invalid Email or Password. Dobara check karein.")
 
-    st.stop()  # Screener code tab tak band rahega jab tak login na ho
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()  # Screener code post-login unlock hoga
 
 # ================= SCREENER APP (POST-LOGIN ACCESS) =================
 
@@ -353,39 +413,4 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
                     if cmp > ema20 > ema50: score += 35
                     elif cmp > ema20: score += 20
                     if 50 <= rsi <= 70: score += 30
-                    elif 45 <= rsi < 50: score += 15
-                    vol_ratio = vol / avg_vol
-                    if vol_ratio >= 1.2: score += 25
-                    elif vol_ratio >= 1.0: score += 15
-                    if cmp > float(prev['High']): score += 10
-                    
-                    if score >= min_score:
-                        risk_amt = account_capital * (risk_per_trade_pct / 100.0)
-                        stop_loss = round(cmp - (1.5 * atr), 2)
-                        risk_per_share = cmp - stop_loss
-                        qty = int(risk_amt // risk_per_share) if risk_per_share > 0 else 0
-                        trade_capital = round(qty * cmp, 2)
-                        target_price = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
-                        
-                        candles_store[sym] = df
-                        all_results.append({
-                            "Symbol": sym, "Score": f"{score}%", "CMP (₹)": round(cmp, 2),
-                            f"Target +{target_pct_choice}%": target_price, "Smart SL": stop_loss,
-                            "RSI": round(rsi, 1), "Vol Ratio": f"{round(vol_ratio, 2)}x",
-                            "Position Qty": qty, "Deploy Cap (₹)": trade_capital, "_score": score
-                        })
-                except Exception:
-                    continue
-            progress.empty()
-            if all_results:
-                all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
-                for item in all_results: del item['_score']
-                st.session_state["adv_results"] = all_results
-                st.session_state["adv_candles"] = candles_store
-
-if "adv_results" in st.session_state:
-    data = st.session_state["adv_results"]
-    if data:
-        st.success(f"🎯 Total {len(data)} Stocks Filtered!")
-        st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
-    
+   
