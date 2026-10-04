@@ -15,9 +15,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Hide Streamlit Chrome & Headers
+# Custom High-Contrast Professional CSS
 st.markdown("""
 <style>
+    /* Streamlit Chrome & Headers Hide */
     #MainMenu {visibility: hidden !important; display: none !important;}
     header {visibility: hidden !important; display: none !important;}
     [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
@@ -29,14 +30,75 @@ st.markdown("""
     iframe[title="Manage app"] {display: none !important; visibility: hidden !important;}
     div[data-testid="stStatusWidget"] {display: none !important;}
 
-    .stApp { background-color: #0b0e14; color: #e1e7ec; }
-    section[data-testid="stSidebar"] { background-color: #11151f; border-right: 1px solid #1e2638; }
+    /* Global Dark Theme */
+    .stApp { background-color: #080a0f; color: #f1f5f9; font-family: 'Inter', sans-serif; }
+    section[data-testid="stSidebar"] { background-color: #0f131c; border-right: 1px solid #1e2638; }
     
+    /* Professional Glassmorphism Login Card */
+    div[data-testid="stForm"] {
+        background: #111622 !important;
+        border: 1px solid #232d42 !important;
+        border-radius: 16px !important;
+        padding: 30px !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    /* Input Fields Fix - Text Har Haal Me Clear Dikhne Ke Liye */
+    .stTextInput label {
+        color: #94a3b8 !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        letter-spacing: 0.3px !important;
+    }
+    .stTextInput div[data-baseweb="input"] {
+        background-color: #161c2b !important;
+        border: 1px solid #2d384e !important;
+        border-radius: 10px !important;
+        color: #ffffff !important;
+    }
+    .stTextInput div[data-baseweb="input"]:focus-within {
+        border-color: #00d2c4 !important;
+        box-shadow: 0 0 10px rgba(0, 210, 196, 0.2) !important;
+    }
+    .stTextInput input {
+        color: #ffffff !important;
+        font-size: 0.95rem !important;
+        caret-color: #00d2c4 !important;
+    }
+    .stTextInput input::placeholder {
+        color: #64748b !important;
+    }
+
+    /* Radio Button Labels Styling */
+    div[data-testid="stRadio"] label {
+        color: #e2e8f0 !important;
+        font-weight: 500 !important;
+    }
+
+    /* Neon Gradient Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #0052cc 0%, #00c49f 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        padding: 0.7rem 1.5rem !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        border-radius: 10px !important;
+        width: 100% !important;
+        letter-spacing: 0.5px !important;
+        transition: all 0.3s ease !important;
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(0, 196, 159, 0.45) !important;
+    }
+
+    /* Dashboard Metrics */
     div[data-testid="stMetric"] {
-        background-color: #141a29;
-        border: 1px solid #232d42;
-        padding: 12px 16px;
-        border-radius: 8px;
+        background-color: #111622;
+        border: 1px solid #1e2638;
+        padding: 14px 18px;
+        border-radius: 10px;
     }
     div[data-testid="stMetric"] label { color: #8b9bb4 !important; font-size: 0.8rem; }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
@@ -44,23 +106,14 @@ st.markdown("""
         font-family: monospace;
         font-weight: 700;
     }
-    .stButton > button {
-        background: linear-gradient(135deg, #0052cc 0%, #00c49f 100%);
-        color: white;
-        border: none;
-        padding: 0.6rem 1.2rem;
-        font-weight: 600;
-        border-radius: 8px;
-        width: 100%;
-    }
 </style>
 """, unsafe_allow_html=True)
 
 # Supabase Auth Client Init
 @st.cache_resource
 def init_supabase() -> Client:
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
+    url = st.secrets["SUPABASE_URL"].strip().rstrip("/")
+    key = st.secrets["SUPABASE_KEY"].strip()
     return create_client(url, key)
 
 supabase = init_supabase()
@@ -68,46 +121,61 @@ supabase = init_supabase()
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
-# ================= AUTHENTICATION GATEWAY =================
+# ================= PROFESSIONAL AUTHENTICATION GATEWAY =================
 if st.session_state["user"] is None:
-    st.markdown("<h2 style='text-align: center; margin-top: 40px;'>⚡ SANDEEP KUMAR <span style='color:#00d2c4;'>PRO TERMINAL</span></h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #8b9bb4;'>Institutional Swing Screener • Member Access Only</p>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
     
-    _, col_auth, _ = st.columns([1, 1.5, 1])
+    # Center Column for Login Box
+    _, col_auth, _ = st.columns([1, 1.3, 1])
     with col_auth:
-        auth_mode = st.radio("Choose Action", ["Sign In", "Create Account (Sign Up)"], horizontal=True)
+        st.markdown("""
+        <div style='text-align: center; margin-bottom: 25px;'>
+            <div style='display: inline-block; background: rgba(0, 210, 196, 0.1); border: 1px solid rgba(0, 210, 196, 0.3); border-radius: 50%; padding: 12px; margin-bottom: 12px;'>
+                <span style='font-size: 1.8rem;'>⚡</span>
+            </div>
+            <h2 style='margin: 0; font-weight: 800; letter-spacing: 0.5px;'>SANDEEP KUMAR</h2>
+            <p style='color: #00d2c4; font-size: 0.85rem; font-weight: 600; margin: 4px 0 0 0; letter-spacing: 1px;'>INSTITUTIONAL SWING TERMINAL</p>
+            <p style='color: #64748b; font-size: 0.8rem; margin-top: 6px;'>Enter your credentials to access live quantitative feeds</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        auth_mode = st.radio("Access Level", ["Existing Member (Sign In)", "New Member (Sign Up)"], horizontal=True, label_visibility="collapsed")
         
         with st.form("auth_form"):
-            email = st.text_input("Email Address", placeholder="name@example.com")
-            password = st.text_input("Password", type="password", placeholder="Minimum 6 characters")
-            submit = st.form_submit_button("Proceed" if auth_mode == "Sign In" else "Register Account")
+            st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
+            email = st.text_input("EMAIL ADDRESS", placeholder="trader@quantdesk.com")
+            password = st.text_input("PASSWORD", type="password", placeholder="••••••••••••")
+            
+            st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+            btn_title = "PROCEED TO TERMINAL" if "Sign In" in auth_mode else "CREATE FREE ACCOUNT"
+            submit = st.form_submit_button(btn_title)
             
             if submit:
                 if not email or not password:
-                    st.error("Email aur Password dono bharna zaroori hai.")
+                    st.error("⚠️ Email aur Password dono fill karein.")
                 elif len(password) < 6:
-                    st.error("Password kam se kam 6 characters ka hona chahiye.")
+                    st.error("⚠️ Password minimum 6 characters ka hona chahiye.")
                 else:
-                    if auth_mode == "Create Account (Sign Up)":
+                    if "Sign Up" in auth_mode:
                         try:
-                            res = supabase.auth.sign_up({"email": email, "password": password})
+                            res = supabase.auth.sign_up({"email": email.strip(), "password": password})
                             if res.user:
-                                st.success("Account successfully ban gaya! Ab aap 'Sign In' select karke login kar sakte hain.")
+                                st.success("✅ Account ban gaya! Ab 'Existing Member (Sign In)' select karke login karein.")
                         except Exception as e:
-                            st.error(f"Sign Up Error: {str(e)}")
+                            st.error(f"Sign Up Failed: {str(e)}")
                     else:
                         try:
-                            res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+                            res = supabase.auth.sign_in_with_password({"email": email.strip(), "password": password})
                             if res.user:
                                 st.session_state["user"] = res.user.email
                                 st.rerun()
-                        except Exception as e:
-                            st.error("Galat Email ya Password! Kripya dobara check karein.")
-    st.stop()  # Screener code tab tak run nahi hoga jab tak login verify na ho
+                        except Exception:
+                            st.error("❌ Invalid Email or Password. Dobara check karein.")
 
-# ================= SCREENER APP (LOGIN COMPLETED) =================
+    st.stop()  # Screener code tab tak band rahega jab tak login na ho
 
-# Master Stock Data
+# ================= SCREENER APP (POST-LOGIN ACCESS) =================
+
 MASTER_STOCKS = {
     "RELIANCE": "2885", "TCS": "11536", "HDFCBANK": "1333", "INFY": "1594",
     "ICICIBANK": "4963", "BHARTIARTL": "10604", "SBIN": "3045", "LT": "11483",
@@ -177,7 +245,7 @@ def fetch_and_prepare_df(smart_api, token):
 def render_chart(df, symbol, target_val, sl_val):
     fig = make_subplots(
         rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.60, 0.20, 0.20],
-        subplot_titles=[f"{symbol} Matrix", "Volume", "RSI (14)"]
+        subplot_titles=[f"{symbol} Daily Matrix (EMA + Bollinger Bands)", "Volume Surge", "RSI (14) Momentum"]
     )
     fig.add_trace(go.Candlestick(x=df['Time'], open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name="Price", increasing_line_color='#00e699', decreasing_line_color='#ff3366'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA20'], line=dict(color='#ff9900', width=1.5), name="EMA 20"), row=1, col=1)
@@ -193,23 +261,23 @@ def render_chart(df, symbol, target_val, sl_val):
     fig.add_trace(go.Scatter(x=df['Time'], y=df['RSI'], line=dict(color='#9966ff', width=1.8), name="RSI"), row=3, col=1)
     fig.add_hline(y=70, line_dash="dash", line_color="#ff3366", opacity=0.6, row=3, col=1)
     fig.add_hline(y=30, line_dash="dash", line_color="#00e699", opacity=0.6, row=3, col=1)
-    fig.update_layout(paper_bgcolor='#0b0e14', plot_bgcolor='#11151f', xaxis_rangeslider_visible=False, height=660, dragmode='pan', margin=dict(l=10, r=10, t=30, b=10), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="#8b9bb4", size=10)), font=dict(family="Courier New, monospace", color="#8b9bb4"))
+    fig.update_layout(paper_bgcolor='#080a0f', plot_bgcolor='#111622', xaxis_rangeslider_visible=False, height=660, dragmode='pan', margin=dict(l=10, r=10, t=30, b=10), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="#8b9bb4", size=10)), font=dict(family="Courier New, monospace", color="#8b9bb4"))
     fig.update_yaxes(gridcolor='#1e2638', fixedrange=False, row=1, col=1)
     fig.update_yaxes(gridcolor='#1e2638', fixedrange=False, row=2, col=1)
     fig.update_yaxes(gridcolor='#1e2638', fixedrange=True, range=[10, 90], row=3, col=1)
     fig.update_xaxes(gridcolor='#1e2638')
     st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
 
-# --- HEADER WITH USER BADGE & LOGOUT ---
+# --- TOP STATUS BAR ---
 c_title, c_badge = st.columns([3, 1])
 with c_title:
     st.markdown("<h2 style='margin-bottom:0;'>⚡ SANDEEP KUMAR <span style='font-size:1rem;color:#00d2c4;'>PRO TERMINAL</span></h2>", unsafe_allow_html=True)
     st.caption(f"Authenticated as: {st.session_state['user']} • Angel One Live Exchange Engine")
 with c_badge:
-    st.markdown("<div style='text-align:right;padding-top:10px;'><span style='background:#102a27;color:#00e699;padding:4px 10px;border-radius:10px;font-size:0.75rem;border:1px solid #00e699;'>AUTHENTICATED</span></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right;padding-top:10px;'><span style='background:#102a27;color:#00e699;padding:4px 12px;border-radius:12px;font-size:0.75rem;border:1px solid #00e699;'>LIVE SYNC</span></div>", unsafe_allow_html=True)
 
-# Sidebar with Logout Button
-st.sidebar.markdown(f"**Logged in as:** `{st.session_state['user']}`")
+# Sidebar with User Info & Logout
+st.sidebar.markdown(f"**Member:** `{st.session_state['user']}`")
 if st.sidebar.button("🚪 Log Out", use_container_width=True):
     supabase.auth.sign_out()
     st.session_state["user"] = None
