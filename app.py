@@ -18,15 +18,18 @@ st.set_page_config(
 # State initialization
 if "user" not in st.session_state:
     st.session_state["user"] = None
+if "user_name" not in st.session_state:
+    st.session_state["user_name"] = None
 if "auth_mode" not in st.session_state:
     st.session_state["auth_mode"] = "login"
 
-# Supabase Auth Client Init
+# Supabase Auth Client Init (Auto-Fix for Invalid Path URL)
 @st.cache_resource
 def init_supabase() -> Client:
-    url = st.secrets["SUPABASE_URL"].strip().rstrip("/")
+    raw_url = st.secrets["SUPABASE_URL"].strip()
+    base_url = raw_url.split("/auth")[0].split("/rest")[0].rstrip("/")
     key = st.secrets["SUPABASE_KEY"].strip()
-    return create_client(url, key)
+    return create_client(base_url, key)
 
 supabase = init_supabase()
 
@@ -35,20 +38,17 @@ if st.session_state["user"] is None:
     st.markdown("""
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Streamlit Default Headers Hide */
         #MainMenu, header, footer, [data-testid="stToolbar"], [data-testid="stHeader"] {
             display: none !important;
             visibility: hidden !important;
         }
 
-        /* Pure Screen Par Vector Blue Night Background */
         .stApp {
             background: radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.95) 0%, rgba(144, 202, 249, 0.45) 12%, rgba(25, 118, 210, 0.6) 28%, rgba(13, 37, 72, 0.95) 65%, #07111e 100%),
                         linear-gradient(180deg, #1e88e5 0%, #0d2847 45%, #050d1a 100%) !important;
             min-height: 100vh;
         }
 
-        /* Floating Moon Glow */
         .stApp::before {
             content: "";
             position: fixed;
@@ -64,7 +64,6 @@ if st.session_state["user"] is None:
             z-index: 0;
         }
 
-        /* Glassmorphic Form Card */
         div[data-testid="stForm"] {
             position: relative;
             z-index: 10;
@@ -75,10 +74,9 @@ if st.session_state["user"] is None:
             border-radius: 28px !important;
             padding: 38px 30px 30px 30px !important;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
-            margin-top: 45px;
+            margin-top: 40px;
         }
 
-        /* Input Box - Typed Text Fix (Dark Navy Black for 100% Visibility) */
         .stTextInput div[data-baseweb="input"] {
             background-color: rgba(255, 255, 255, 0.45) !important;
             border: 1.5px solid rgba(255, 255, 255, 0.8) !important;
@@ -107,7 +105,6 @@ if st.session_state["user"] is None:
             font-weight: 500 !important;
         }
 
-        /* Full Width Rounded Blue Button */
         div[data-testid="stForm"] div[data-testid="stFormSubmitButton"] {
             display: flex !important;
             justify-content: center !important;
@@ -133,7 +130,6 @@ if st.session_state["user"] is None:
             box-shadow: 0 10px 25px rgba(0, 176, 255, 0.7) !important;
         }
 
-        /* Switch Link Styling Below Card */
         div[data-testid="stVerticalBlock"] > div.stButton > button {
             background: transparent !important;
             border: none !important;
@@ -150,7 +146,6 @@ if st.session_state["user"] is None:
     </style>
     """, unsafe_allow_html=True)
 
-    # Center Alignment Box
     _, col_auth, _ = st.columns([1, 1.15, 1])
     with col_auth:
         is_login = st.session_state["auth_mode"] == "login"
@@ -163,7 +158,13 @@ if st.session_state["user"] is None:
             </div>
             """, unsafe_allow_html=True)
             
-            email = st.text_input("Username", placeholder="👤  CodeByGaurav / email", label_visibility="collapsed")
+            # Register karte waqt Full Name ka field aayega
+            full_name = None
+            if not is_login:
+                full_name = st.text_input("Name", placeholder="👤  Full Name (Jaise: Rahul Sharma)", label_visibility="collapsed")
+                st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+            
+            email = st.text_input("Email", placeholder="✉️  email@domain.com", label_visibility="collapsed")
             st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
             password = st.text_input("Password", type="password", placeholder="🔒  ••••••••••••", label_visibility="collapsed")
             
@@ -178,19 +179,28 @@ if st.session_state["user"] is None:
             
             if submit:
                 if not email or not password:
-                    st.error("⚠️ Username/Email aur Password dono fill karein.")
+                    st.error("⚠️ Email aur Password dono fill karein.")
+                elif not is_login and not full_name:
+                    st.error("⚠️ Kripya apna Naam fill karein.")
                 elif len(password) < 6:
                     st.error("⚠️ Password minimum 6 characters ka hona chahiye.")
                 else:
-                    clean_email = email.replace("👤", "").strip()
+                    clean_email = email.replace("✉️", "").strip()
                     if "@" not in clean_email:
                         clean_email = f"{clean_email}@terminal.com"
                     
                     if not is_login:
                         try:
-                            res = supabase.auth.sign_up({"email": clean_email, "password": password})
+                            # Full name user metadata mein save ho raha hai
+                            res = supabase.auth.sign_up({
+                                "email": clean_email,
+                                "password": password,
+                                "options": {
+                                    "data": {"full_name": full_name.strip()}
+                                }
+                            })
                             if res.user:
-                                st.success("✅ Account ban gaya! Ab Login par click karke login karein.")
+                                st.success("✅ Account ban gaya! Ab Login karke access karein.")
                                 st.session_state["auth_mode"] = "login"
                         except Exception as e:
                             st.error(f"Sign Up Failed: {str(e)}")
@@ -199,6 +209,9 @@ if st.session_state["user"] is None:
                             res = supabase.auth.sign_in_with_password({"email": clean_email, "password": password})
                             if res.user:
                                 st.session_state["user"] = res.user.email
+                                # Save Name from Supabase Metadata
+                                meta_name = res.user.user_metadata.get("full_name") if res.user.user_metadata else None
+                                st.session_state["user_name"] = meta_name if meta_name else res.user.email.split("@")[0].capitalize()
                                 st.rerun()
                         except Exception:
                             st.error("❌ Invalid Credentials. Dobara check karein.")
@@ -335,17 +348,19 @@ def render_chart(df, symbol, target_val, sl_val):
 
 # --- TOP STATUS BAR ---
 c_title, c_badge = st.columns([3, 1])
+display_name = st.session_state.get('user_name', st.session_state['user'])
 with c_title:
     st.markdown("<h2 style='margin-bottom:0;'>⚡ SANDEEP KUMAR <span style='font-size:1rem;color:#00d2c4;'>PRO TERMINAL</span></h2>", unsafe_allow_html=True)
-    st.caption(f"Authenticated as: {st.session_state['user']} • Angel One Live Exchange Engine")
+    st.caption(f"Authenticated Member: {display_name} ({st.session_state['user']}) • Angel One Live Sync")
 with c_badge:
     st.markdown("<div style='text-align:right;padding-top:10px;'><span style='background:#102a27;color:#00e699;padding:4px 12px;border-radius:12px;font-size:0.75rem;border:1px solid #00e699;'>LIVE SYNC</span></div>", unsafe_allow_html=True)
 
 # Sidebar with User Info & Logout
-st.sidebar.markdown(f"**Member:** `{st.session_state['user']}`")
+st.sidebar.markdown(f"**Member:** `{display_name}`")
 if st.sidebar.button("🚪 Log Out", use_container_width=True):
     supabase.auth.sign_out()
     st.session_state["user"] = None
+    st.session_state["user_name"] = None
     st.rerun()
 
 st.sidebar.markdown("---")
@@ -398,80 +413,4 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
     if not smart_api:
         st.error("Angel One session fail ho gaya. Secrets check karein.")
     else:
-        with st.spinner("Screening high momentum setups..."):
-            all_results = []
-            candles_store = {}
-            progress = st.progress(0)
-            
-            scan_universe = list(MASTER_STOCKS.items())[:25]
-            for idx, (sym, token) in enumerate(scan_universe):
-                progress.progress((idx + 1) / len(scan_universe))
-                try:
-                    df = fetch_and_prepare_df(smart_api, token)
-                    if df is None:
-                        continue
-                    last, prev = df.iloc[-1], df.iloc[-2]
-                    cmp, ema20, ema50 = float(last['Close']), float(last['EMA20']), float(last['EMA50'])
-                    rsi = float(last['RSI'])
-                    vol = float(last['Volume'])
-                    avg_vol = float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
-                    atr = float(last['ATR']) if not pd.isna(last['ATR']) else (cmp * 0.02)
-                    
-                    score = 0
-                    if cmp > ema20 > ema50:
-                        score += 35
-                    elif cmp > ema20:
-                        score += 20
-                    
-                    if 50 <= rsi <= 70:
-                        score += 30
-                    elif 45 <= rsi < 50:
-                        score += 15
-                    
-                    vol_ratio = vol / avg_vol
-                    if vol_ratio >= 1.2:
-                        score += 25
-                    elif vol_ratio >= 1.0:
-                        score += 15
-                    
-                    if cmp > float(prev['High']):
-                        score += 10
-                    
-                    if score >= min_score:
-                        risk_amt = account_capital * (risk_per_trade_pct / 100.0)
-                        stop_loss = round(cmp - (1.5 * atr), 2)
-                        risk_per_share = cmp - stop_loss
-                        qty = int(risk_amt // risk_per_share) if risk_per_share > 0 else 0
-                        trade_capital = round(qty * cmp, 2)
-                        target_price = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
-                        
-                        candles_store[sym] = df
-                        all_results.append({
-                            "Symbol": sym,
-                            "Score": f"{score}%",
-                            "CMP (₹)": round(cmp, 2),
-                            f"Target +{target_pct_choice}%": target_price,
-                            "Smart SL": stop_loss,
-                            "RSI": round(rsi, 1),
-                            "Vol Ratio": f"{round(vol_ratio, 2)}x",
-                            "Position Qty": qty,
-                            "Deploy Cap (₹)": trade_capital,
-                            "_score": score
-                        })
-                except Exception:
-                    continue
-
-            progress.empty()
-            if all_results:
-                all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
-                for item in all_results:
-                    del item['_score']
-                st.session_state["adv_results"] = all_results
-                st.session_state["adv_candles"] = candles_store
-
-if "adv_results" in st.session_state:
-    data = st.session_state["adv_results"]
-    if data:
-        st.success(f"🎯 Total {len(data)} Stocks Filtered!")
-        st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
-        
+        with st.spinner("Scree
