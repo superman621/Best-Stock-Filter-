@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from SmartApi import SmartConnect
 
 st.set_page_config(
-    page_title="AlphaPulse | Pro Terminal",
+    page_title="Sandeep Kumar | Pro Terminal",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -171,10 +171,15 @@ def render_chart(df, symbol, target_val, sl_val):
     
     st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
 
-# Header & Sidebar
-st.markdown("<h2 style='margin-bottom:0;'>⚡ ALPHAPULSE <span style='font-size:1rem;color:#00d2c4;'>TERMINAL</span></h2>", unsafe_allow_html=True)
-st.caption("Angel One SmartAPI Live Engine • Full Market Search Bar Enabled")
+# --- BRANDING HEADER: SANDEEP KUMAR ---
+c_title, c_badge = st.columns([3, 1])
+with c_title:
+    st.markdown("<h2 style='margin-bottom:0;'>⚡ SANDEEP KUMAR <span style='font-size:1rem;color:#00d2c4;'>PRO TERMINAL</span></h2>", unsafe_allow_html=True)
+    st.caption("Quantitative Swing Screener • Angel One Live Exchange Engine")
+with c_badge:
+    st.markdown("<div style='text-align:right;padding-top:10px;'><span style='background:#102a27;color:#00e699;padding:4px 10px;border-radius:10px;font-size:0.75rem;border:1px solid #00e699;'>LIVE SYNC</span></div>", unsafe_allow_html=True)
 
+# Sidebar
 st.sidebar.markdown("### 🎛️ Risk Engine")
 account_capital = st.sidebar.number_input("Portfolio Capital (₹)", value=100000, step=25000)
 risk_per_trade_pct = st.sidebar.slider("Risk Per Trade (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
@@ -183,13 +188,13 @@ min_score = st.sidebar.slider("Minimum Setup Score", min_value=50, max_value=85,
 
 st.markdown("---")
 
-# 🔍 SEARCH BAR SECTION (ANY STOCK)
+# 🔍 SEARCH BAR SECTION
 st.subheader("🔍 Instant Stock Search & Chart Inspector")
 all_stock_names = sorted(list(MASTER_STOCKS.keys()))
 
 col_search, col_btn = st.columns([3, 1])
 with col_search:
-    searched_stock = st.selectbox("Stock search karein ya type karein (Jaise: RELIANCE, TATAMOTORS, ZOMATO):", all_stock_names)
+    searched_stock = st.selectbox("Stock search karein (Jaise: RELIANCE, TATAMOTORS, ZOMATO):", all_stock_names)
 with col_btn:
     st.write("")
     st.write("")
@@ -199,7 +204,7 @@ if search_clicked or st.session_state.get("active_search") == searched_stock:
     st.session_state["active_search"] = searched_stock
     smart_api = get_angel_client()
     if smart_api:
-        with st.spinner(f"Fetching live technicals for {searched_stock}..."):
+        with st.spinner(f"Fetching technicals for {searched_stock}..."):
             token = MASTER_STOCKS[searched_stock]
             df_search = fetch_and_prepare_df(smart_api, token)
             if df_search is not None:
@@ -209,7 +214,6 @@ if search_clicked or st.session_state.get("active_search") == searched_stock:
                 sl = round(cmp - (1.5 * atr), 2)
                 rsi = round(float(df_search.iloc[-1]['RSI']), 1)
                 
-                # Metric Strip
                 m1, m2, m3, m4 = st.columns(4)
                 m1.metric("CMP", f"₹{round(cmp, 2)}")
                 m2.metric(f"Target +{target_pct_choice}%", f"₹{tgt}")
@@ -218,11 +222,11 @@ if search_clicked or st.session_state.get("active_search") == searched_stock:
                 
                 render_chart(df_search, searched_stock, tgt, sl)
             else:
-                st.error("Data load nahi ho paya. Market timings check karein.")
+                st.error("Data load nahi ho paya. Kripya dobara try karein.")
 
 st.markdown("---")
 
-# 🚀 BATCH SCANNER SECTION
+# 🚀 SCREENER SECTION
 st.subheader("⚡ Automated Momentum Screener")
 if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
     smart_api = get_angel_client()
@@ -234,7 +238,7 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
             candles_store = {}
             progress = st.progress(0)
             
-            scan_universe = list(MASTER_STOCKS.items())[:25] # Top 25 for quick responsive scanning
+            scan_universe = list(MASTER_STOCKS.items())[:25]
             for idx, (sym, token) in enumerate(scan_universe):
                 progress.progress((idx + 1) / len(scan_universe))
                 try:
@@ -297,4 +301,4 @@ if "adv_results" in st.session_state:
     if data:
         st.success(f"🎯 Total {len(data)} Stocks Filtered!")
         st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
-                      
+                    
