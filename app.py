@@ -402,4 +402,7 @@ st.sidebar.markdown("### 🎛️ Risk Engine")
 account_capital = st.sidebar.number_input("Portfolio Capital (₹)", value=100000, step=25000)
 risk_per_trade_pct = st.sidebar.slider("Risk Per Trade (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
 target_pct_choice = st.sidebar.slider("Target Return (%)", min_value=8, max_value=15, value=10, step=1)
-min_score = st.sidebar.slider("Minimum Setup Sco
+min_score = st.sidebar.slider("Minimum Setup Score", min_value=50, max_value=85, value=60, step=5)
+
+st.markdown("---")
+
