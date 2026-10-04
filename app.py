@@ -1,4 +1,4 @@
-Import streamlit as st
+import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -15,82 +15,133 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom High-Contrast Professional CSS
+# Supabase Auth Client Init
+@st.cache_resource
+def init_supabase() -> Client:
+    url = st.secrets["SUPABASE_URL"].strip().rstrip("/")
+    key = st.secrets["SUPABASE_KEY"].strip()
+    return create_client(url, key)
+
+supabase = init_supabase()
+
+if "user" not in st.session_state:
+    st.session_state["user"] = None
+
+# Custom High-Contrast Professional & Glassmorphic CSS
 st.markdown("""
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     /* Streamlit Chrome & Headers Hide */
-    #MainMenu {visibility: hidden !important; display: none !important;}
-    header {visibility: hidden !important; display: none !important;}
-    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
-    [data-testid="stHeader"] {display: none !important;}
-    footer {visibility: hidden !important; display: none !important;}
-    [data-testid="manage-app-button"] {display: none !important; visibility: hidden !important;}
-    .stAppDeployButton {display: none !important; visibility: hidden !important;}
-    div[class*="viewerBadge"] {display: none !important; visibility: hidden !important;}
-    iframe[title="Manage app"] {display: none !important; visibility: hidden !important;}
-    div[data-testid="stStatusWidget"] {display: none !important;}
+    #MainMenu, header, footer {visibility: hidden !important; display: none !important;}
+    [data-testid="stToolbar"], [data-testid="stHeader"] {display: none !important;}
+    [data-testid="manage-app-button"], .stAppDeployButton {display: none !important; visibility: hidden !important;}
+    div[class*="viewerBadge"], iframe[title="Manage app"], div[data-testid="stStatusWidget"] {display: none !important;}
 
     /* Global Dark Theme */
-    .stApp { background-color: #080a0f; color: #f1f5f9; font-family: 'Inter', sans-serif; }
-    section[data-testid="stSidebar"] { background-color: #0f131c; border-right: 1px solid #1e2638; }
-    
-    /* Professional Glassmorphism Login Card */
-    div[data-testid="stForm"] {
-        background: #111622 !important;
-        border: 1px solid #232d42 !important;
-        border-radius: 16px !important;
-        padding: 30px !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+    .stApp { 
+        background-color: #080a0f; 
+        color: #f1f5f9; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    }
+    section[data-testid="stSidebar"] { 
+        background-color: #0f131c; 
+        border-right: 1px solid #1e2638; 
     }
 
-    /* Input Fields Fix - Text Har Haal Me Clear Dikhne Ke Liye */
+    /* ================= VECTOR BLUE NIGHT LOGIN CANVAS ================= */
+    .login-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        background: radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.9) 0%, rgba(200, 230, 255, 0.45) 14%, rgba(25, 118, 210, 0.6) 30%, rgba(13, 27, 62, 0.95) 75%, #070e1e 100%),
+                    linear-gradient(180deg, #1976d2 0%, #0d2847 50%, #050d1a 100%);
+        border-radius: 24px;
+        padding: 40px 15px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Floating Luminous Moon */
+    .login-container::before {
+        content: "";
+        position: absolute;
+        top: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 100px;
+        background: radial-gradient(circle, #ffffff 40%, rgba(255, 255, 255, 0.8) 70%, rgba(255, 255, 255, 0) 100%);
+        border-radius: 50%;
+        filter: blur(0.5px);
+        box-shadow: 0 0 45px rgba(255, 255, 255, 0.85);
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    /* Glassmorphism Form Card */
+    div[data-testid="stForm"] {
+        position: relative;
+        z-index: 2;
+        background: rgba(255, 255, 255, 0.10) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.22) !important;
+        border-radius: 22px !important;
+        padding: 35px 28px !important;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45) !important;
+    }
+
+    /* Pill-Shaped Rounded Inputs */
     .stTextInput label {
-        color: #94a3b8 !important;
+        color: rgba(255, 255, 255, 0.9) !important;
         font-weight: 600 !important;
-        font-size: 0.9rem !important;
-        letter-spacing: 0.3px !important;
+        font-size: 0.85rem !important;
     }
     .stTextInput div[data-baseweb="input"] {
-        background-color: #161c2b !important;
-        border: 1px solid #2d384e !important;
-        border-radius: 10px !important;
+        background-color: rgba(255, 255, 255, 0.18) !important;
+        border: 1px solid rgba(255, 255, 255, 0.28) !important;
+        border-radius: 30px !important;
         color: #ffffff !important;
+        transition: all 0.3s ease !important;
     }
     .stTextInput div[data-baseweb="input"]:focus-within {
-        border-color: #00d2c4 !important;
-        box-shadow: 0 0 10px rgba(0, 210, 196, 0.2) !important;
+        border-color: #2196f3 !important;
+        background-color: rgba(255, 255, 255, 0.26) !important;
+        box-shadow: 0 0 15px rgba(33, 150, 243, 0.5) !important;
     }
     .stTextInput input {
         color: #ffffff !important;
         font-size: 0.95rem !important;
-        caret-color: #00d2c4 !important;
     }
     .stTextInput input::placeholder {
-        color: #64748b !important;
+        color: rgba(255, 255, 255, 0.65) !important;
     }
 
-    /* Radio Button Labels Styling */
-    div[data-testid="stRadio"] label {
-        color: #e2e8f0 !important;
-        font-weight: 500 !important;
-    }
-
-    /* Neon Gradient Buttons */
+    /* Pill-Shaped Sky Blue Login Button */
     .stButton > button {
-        background: linear-gradient(135deg, #0052cc 0%, #00c49f 100%) !important;
+        background: linear-gradient(135deg, #1e88e5 0%, #00b0ff 100%) !important;
         color: #ffffff !important;
         border: none !important;
-        padding: 0.7rem 1.5rem !important;
+        padding: 0.72rem 1.5rem !important;
         font-weight: 700 !important;
-        font-size: 0.95rem !important;
-        border-radius: 10px !important;
+        font-size: 1rem !important;
+        border-radius: 30px !important;
         width: 100% !important;
         letter-spacing: 0.5px !important;
+        box-shadow: 0 6px 20px rgba(0, 176, 255, 0.35) !important;
         transition: all 0.3s ease !important;
     }
     .stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px rgba(0, 196, 159, 0.45) !important;
+        box-shadow: 0 10px 25px rgba(0, 176, 255, 0.6) !important;
+    }
+
+    /* Radio Filter Styling */
+    div[data-testid="stRadio"] label {
+        color: #e2e8f0 !important;
+        font-weight: 500 !important;
     }
 
     /* Dashboard Metrics */
@@ -109,46 +160,40 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Supabase Auth Client Init
-@st.cache_resource
-def init_supabase() -> Client:
-    url = st.secrets["SUPABASE_URL"].strip().rstrip("/")
-    key = st.secrets["SUPABASE_KEY"].strip()
-    return create_client(url, key)
-
-supabase = init_supabase()
-
-if "user" not in st.session_state:
-    st.session_state["user"] = None
-
-# ================= PROFESSIONAL AUTHENTICATION GATEWAY =================
+# ================= AUTHENTICATION GATEWAY =================
 if st.session_state["user"] is None:
-    st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='login-container'>", unsafe_allow_html=True)
     
-    # Center Column for Login Box
-    _, col_auth, _ = st.columns([1, 1.3, 1])
+    _, col_auth, _ = st.columns([1, 1.25, 1])
     with col_auth:
         st.markdown("""
-        <div style='text-align: center; margin-bottom: 25px;'>
-            <div style='display: inline-block; background: rgba(0, 210, 196, 0.1); border: 1px solid rgba(0, 210, 196, 0.3); border-radius: 50%; padding: 12px; margin-bottom: 12px;'>
-                <span style='font-size: 1.8rem;'>⚡</span>
-            </div>
-            <h2 style='margin: 0; font-weight: 800; letter-spacing: 0.5px;'>SANDEEP KUMAR</h2>
-            <p style='color: #00d2c4; font-size: 0.85rem; font-weight: 600; margin: 4px 0 0 0; letter-spacing: 1px;'>INSTITUTIONAL SWING TERMINAL</p>
-            <p style='color: #64748b; font-size: 0.8rem; margin-top: 6px;'>Enter your credentials to access live quantitative feeds</p>
+        <div style='text-align: center; margin-bottom: 22px; position: relative; z-index: 2;'>
+            <h1 style='font-size: 2.3rem; font-weight: 800; color: #ffffff; margin-bottom: 2px; letter-spacing: 0.5px;'>Login</h1>
+            <p style='color: rgba(255, 255, 255, 0.8); font-size: 0.85rem; margin: 0;'>Sandeep Kumar | Pro Quantitative Terminal</p>
         </div>
         """, unsafe_allow_html=True)
         
         auth_mode = st.radio("Access Level", ["Existing Member (Sign In)", "New Member (Sign Up)"], horizontal=True, label_visibility="collapsed")
         
         with st.form("auth_form"):
-            st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
-            email = st.text_input("EMAIL ADDRESS", placeholder="trader@quantdesk.com")
-            password = st.text_input("PASSWORD", type="password", placeholder="••••••••••••")
+            email = st.text_input("EMAIL ADDRESS", placeholder="👤  trader@quantdesk.com")
+            password = st.text_input("PASSWORD", type="password", placeholder="🔒  ••••••••••••")
             
-            st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-            btn_title = "PROCEED TO TERMINAL" if "Sign In" in auth_mode else "CREATE FREE ACCOUNT"
+            st.markdown("""
+            <div style='display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: rgba(255, 255, 255, 0.85); margin: 6px 2px 18px 2px;'>
+                <span><i class="fa-solid fa-square-check" style="color: #00b0ff; margin-right: 4px;"></i> Remember me</span>
+                <span style='color: rgba(255, 255, 255, 0.85); cursor: pointer;'>Forgot Password</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            btn_title = "Login" if "Sign In" in auth_mode else "Register"
             submit = st.form_submit_button(btn_title)
+            
+            st.markdown("""
+            <div style='text-align: center; margin-top: 14px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);'>
+                Don't have an account? <span style='color: #ffffff; font-weight: 600;'>Register</span>
+            </div>
+            """, unsafe_allow_html=True)
             
             if submit:
                 if not email or not password:
@@ -156,23 +201,25 @@ if st.session_state["user"] is None:
                 elif len(password) < 6:
                     st.error("⚠️ Password minimum 6 characters ka hona chahiye.")
                 else:
+                    clean_email = email.replace("👤", "").strip()
                     if "Sign Up" in auth_mode:
                         try:
-                            res = supabase.auth.sign_up({"email": email.strip(), "password": password})
+                            res = supabase.auth.sign_up({"email": clean_email, "password": password})
                             if res.user:
-                                st.success("✅ Account ban gaya! Ab 'Existing Member (Sign In)' select karke login karein.")
+                                st.success("✅ Account ban gaya! Ab Sign In select karke login karein.")
                         except Exception as e:
                             st.error(f"Sign Up Failed: {str(e)}")
                     else:
                         try:
-                            res = supabase.auth.sign_in_with_password({"email": email.strip(), "password": password})
+                            res = supabase.auth.sign_in_with_password({"email": clean_email, "password": password})
                             if res.user:
                                 st.session_state["user"] = res.user.email
                                 st.rerun()
                         except Exception:
                             st.error("❌ Invalid Email or Password. Dobara check karein.")
 
-    st.stop()  # Screener code tab tak band rahega jab tak login na ho
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
 
 # ================= SCREENER APP (POST-LOGIN ACCESS) =================
 
@@ -201,7 +248,8 @@ def get_angel_client():
         totp = pyotp.TOTP(totp_key).now()
         smart_api = SmartConnect(api_key=api_key)
         data = smart_api.generateSession(client_code, pin, totp)
-        if data['status']: return smart_api
+        if data.get('status'):
+            return smart_api
         return None
     except Exception:
         return None
@@ -227,9 +275,11 @@ def fetch_and_prepare_df(smart_api, token):
         "exchange": "NSE", "symboltoken": token,
         "interval": "ONE_DAY", "fromdate": from_date, "todate": to_date
     })
-    if not res.get('status') or not res.get('data'): return None
+    if not res.get('status') or not res.get('data'):
+        return None
     df = pd.DataFrame(res['data'], columns=['Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
-    if len(df) < 35: return None
+    if len(df) < 35:
+        return None
     df['Time'] = pd.to_datetime(df['Time'])
     df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
     df['EMA50'] = df['Close'].ewm(span=50, adjust=False).mean()
@@ -343,48 +393,33 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
                 progress.progress((idx + 1) / len(scan_universe))
                 try:
                     df = fetch_and_prepare_df(smart_api, token)
-                    if df is None: continue
+                    if df is None:
+                        continue
                     last, prev = df.iloc[-1], df.iloc[-2]
                     cmp, ema20, ema50 = float(last['Close']), float(last['EMA20']), float(last['EMA50'])
-                    rsi, vol, avg_vol = float(last['RSI']), float(last['Volume']), float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
+                    rsi = float(last['RSI'])
+                    vol = float(last['Volume'])
+                    avg_vol = float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
                     atr = float(last['ATR']) if not pd.isna(last['ATR']) else (cmp * 0.02)
                     
                     score = 0
-                    if cmp > ema20 > ema50: score += 35
-                    elif cmp > ema20: score += 20
-                    if 50 <= rsi <= 70: score += 30
-                    elif 45 <= rsi < 50: score += 15
-                    vol_ratio = vol / avg_vol
-                    if vol_ratio >= 1.2: score += 25
-                    elif vol_ratio >= 1.0: score += 15
-                    if cmp > float(prev['High']): score += 10
+                    if cmp > ema20 > ema50:
+                        score += 35
+                    elif cmp > ema20:
+                        score += 20
                     
-                    if score >= min_score:
-                        risk_amt = account_capital * (risk_per_trade_pct / 100.0)
-                        stop_loss = round(cmp - (1.5 * atr), 2)
-                        risk_per_share = cmp - stop_loss
-                        qty = int(risk_amt // risk_per_share) if risk_per_share > 0 else 0
-                        trade_capital = round(qty * cmp, 2)
-                        target_price = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
-                        
-                        candles_store[sym] = df
-                        all_results.append({
-                            "Symbol": sym, "Score": f"{score}%", "CMP (₹)": round(cmp, 2),
-                            f"Target +{target_pct_choice}%": target_price, "Smart SL": stop_loss,
-                            "RSI": round(rsi, 1), "Vol Ratio": f"{round(vol_ratio, 2)}x",
-                            "Position Qty": qty, "Deploy Cap (₹)": trade_capital, "_score": score
-                        })
-                except Exception:
-                    continue
-            progress.empty()
-            if all_results:
-                all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
-                for item in all_results: del item['_score']
-                st.session_state["adv_results"] = all_results
-                st.session_state["adv_candles"] = candles_store
-
-if "adv_results" in st.session_state:
-    data = st.session_state["adv_results"]
-    if data:
-        st.success(f"🎯 Total {len(data)} Stocks Filtered!")
-        st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
+                    if 50 <= rsi <= 70:
+                        score += 30
+                    elif 45 <= rsi < 50:
+                        score += 15
+                    
+                    vol_ratio = vol / avg_vol
+                    if vol_ratio >= 1.2:
+                        score += 25
+                    elif vol_ratio >= 1.0:
+                        score += 15
+                    
+                    if cmp > float(prev['High']):
+                        score += 10
+                    
+          
