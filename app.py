@@ -6,6 +6,7 @@ import pyotp
 from datetime import datetime, timedelta
 from SmartApi import SmartConnect
 
+# Page Setup
 st.set_page_config(
     page_title="Sandeep Kumar | Pro Terminal",
     page_icon="⚡",
@@ -13,18 +14,24 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS to HIDE GitHub Icon, Top Header, and Main Menu
+# Custom CSS to Clean UI & Hide GitHub, Header, Footer & Manage App Button
 st.markdown("""
 <style>
-    /* GitHub Icon, Share button, aur Header ko poori tarah hide karein */
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    /* 1. Top Header, Menu, GitHub Icon, Share Button Hide */
+    #MainMenu {visibility: hidden !important; display: none !important;}
+    header {visibility: hidden !important; display: none !important;}
     [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
     [data-testid="stHeader"] {display: none !important;}
-    .viewerBadge_container__1QSob {display: none !important;}
     
-    /* Global Page Styling */
+    /* 2. Bottom "Manage App" Button, Watermark & Footer Hide */
+    footer {visibility: hidden !important; display: none !important;}
+    [data-testid="manage-app-button"] {display: none !important; visibility: hidden !important;}
+    .stAppDeployButton {display: none !important; visibility: hidden !important;}
+    div[class*="viewerBadge"] {display: none !important; visibility: hidden !important;}
+    iframe[title="Manage app"] {display: none !important; visibility: hidden !important;}
+    div[data-testid="stStatusWidget"] {display: none !important;}
+
+    /* 3. Terminal Theme Styling */
     .stApp { background-color: #0b0e14; color: #e1e7ec; }
     section[data-testid="stSidebar"] { background-color: #11151f; border-right: 1px solid #1e2638; }
     
@@ -48,11 +55,16 @@ st.markdown("""
         font-weight: 600;
         border-radius: 8px;
         width: 100%;
+        transition: 0.3s;
+    }
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(0, 196, 159, 0.4);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Master Universe Dictionary (NSE Symbol: Angel Token)
+# Master Stocks List (NSE Symbol: Angel One Token)
 MASTER_STOCKS = {
     "RELIANCE": "2885", "TCS": "11536", "HDFCBANK": "1333", "INFY": "1594",
     "ICICIBANK": "4963", "BHARTIARTL": "10604", "SBIN": "3045", "LT": "11483",
@@ -135,10 +147,10 @@ def render_chart(df, symbol, target_val, sl_val):
         shared_xaxes=True,
         vertical_spacing=0.03,
         row_heights=[0.60, 0.20, 0.20],
-        subplot_titles=[f"{symbol} Daily Matrix", "Volume Surge", "RSI (14)"]
+        subplot_titles=[f"{symbol} Daily Matrix (EMA + Bollinger Bands)", "Volume Surge", "RSI (14) Momentum"]
     )
     
-    # Pane 1: Candles + Indicators
+    # 1. Price + Candles + MAs + BBands
     fig.add_trace(go.Candlestick(
         x=df['Time'], open=df['Open'], high=df['High'],
         low=df['Low'], close=df['Close'], name="Price",
@@ -154,12 +166,12 @@ def render_chart(df, symbol, target_val, sl_val):
         fig.add_hline(y=target_val, line_dash="dash", line_color="#00e699", annotation_text=f" Target: ₹{target_val}", annotation_position="top right", row=1, col=1)
         fig.add_hline(y=sl_val, line_dash="dash", line_color="#ff3366", annotation_text=f" SL: ₹{sl_val}", annotation_position="bottom right", row=1, col=1)
     
-    # Pane 2: Volume
+    # 2. Volume
     vol_colors = ['#00e699' if c >= o else '#ff3366' for c, o in zip(df['Close'], df['Open'])]
     fig.add_trace(go.Bar(x=df['Time'], y=df['Volume'], marker_color=vol_colors, name="Volume", opacity=0.8), row=2, col=1)
     fig.add_trace(go.Scatter(x=df['Time'], y=df['Vol_SMA20'], line=dict(color='#ffbb33', width=1), name="Vol Avg 20"), row=2, col=1)
     
-    # Pane 3: RSI
+    # 3. RSI
     fig.add_trace(go.Scatter(x=df['Time'], y=df['RSI'], line=dict(color='#9966ff', width=1.8), name="RSI"), row=3, col=1)
     fig.add_hline(y=70, line_dash="dash", line_color="#ff3366", opacity=0.6, row=3, col=1)
     fig.add_hline(y=30, line_dash="dash", line_color="#00e699", opacity=0.6, row=3, col=1)
@@ -181,7 +193,7 @@ def render_chart(df, symbol, target_val, sl_val):
     
     st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
 
-# --- BRANDING HEADER: SANDEEP KUMAR ---
+# --- BRANDING HEADER ---
 c_title, c_badge = st.columns([3, 1])
 with c_title:
     st.markdown("<h2 style='margin-bottom:0;'>⚡ SANDEEP KUMAR <span style='font-size:1rem;color:#00d2c4;'>PRO TERMINAL</span></h2>", unsafe_allow_html=True)
@@ -311,4 +323,4 @@ if "adv_results" in st.session_state:
     if data:
         st.success(f"🎯 Total {len(data)} Stocks Filtered!")
         st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
-                    
+    
