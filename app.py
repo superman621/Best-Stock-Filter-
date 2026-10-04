@@ -5,6 +5,7 @@ from plotly.subplots import make_subplots
 import pyotp
 from datetime import datetime, timedelta
 from SmartApi import SmartConnect
+from supabase import create_client, Client
 
 # Page Setup
 st.set_page_config(
@@ -14,16 +15,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS to Clean UI & Hide GitHub, Header, Footer & Manage App Button
+# Hide Streamlit Chrome & Headers
 st.markdown("""
 <style>
-    /* 1. Top Header, Menu, GitHub Icon, Share Button Hide */
     #MainMenu {visibility: hidden !important; display: none !important;}
     header {visibility: hidden !important; display: none !important;}
     [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
     [data-testid="stHeader"] {display: none !important;}
-    
-    /* 2. Bottom "Manage App" Button, Watermark & Footer Hide */
     footer {visibility: hidden !important; display: none !important;}
     [data-testid="manage-app-button"] {display: none !important; visibility: hidden !important;}
     .stAppDeployButton {display: none !important; visibility: hidden !important;}
@@ -31,7 +29,6 @@ st.markdown("""
     iframe[title="Manage app"] {display: none !important; visibility: hidden !important;}
     div[data-testid="stStatusWidget"] {display: none !important;}
 
-    /* 3. Terminal Theme Styling */
     .stApp { background-color: #0b0e14; color: #e1e7ec; }
     section[data-testid="stSidebar"] { background-color: #11151f; border-right: 1px solid #1e2638; }
     
@@ -55,16 +52,62 @@ st.markdown("""
         font-weight: 600;
         border-radius: 8px;
         width: 100%;
-        transition: 0.3s;
-    }
-    .stButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 14px rgba(0, 196, 159, 0.4);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Master Stocks List (NSE Symbol: Angel One Token)
+# Supabase Auth Client Init
+@st.cache_resource
+def init_supabase() -> Client:
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
+
+supabase = init_supabase()
+
+if "user" not in st.session_state:
+    st.session_state["user"] = None
+
+# ================= AUTHENTICATION GATEWAY =================
+if st.session_state["user"] is None:
+    st.markdown("<h2 style='text-align: center; margin-top: 40px;'>⚡ SANDEEP KUMAR <span style='color:#00d2c4;'>PRO TERMINAL</span></h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #8b9bb4;'>Institutional Swing Screener • Member Access Only</p>", unsafe_allow_html=True)
+    
+    _, col_auth, _ = st.columns([1, 1.5, 1])
+    with col_auth:
+        auth_mode = st.radio("Choose Action", ["Sign In", "Create Account (Sign Up)"], horizontal=True)
+        
+        with st.form("auth_form"):
+            email = st.text_input("Email Address", placeholder="name@example.com")
+            password = st.text_input("Password", type="password", placeholder="Minimum 6 characters")
+            submit = st.form_submit_button("Proceed" if auth_mode == "Sign In" else "Register Account")
+            
+            if submit:
+                if not email or not password:
+                    st.error("Email aur Password dono bharna zaroori hai.")
+                elif len(password) < 6:
+                    st.error("Password kam se kam 6 characters ka hona chahiye.")
+                else:
+                    if auth_mode == "Create Account (Sign Up)":
+                        try:
+                            res = supabase.auth.sign_up({"email": email, "password": password})
+                            if res.user:
+                                st.success("Account successfully ban gaya! Ab aap 'Sign In' select karke login kar sakte hain.")
+                        except Exception as e:
+                            st.error(f"Sign Up Error: {str(e)}")
+                    else:
+                        try:
+                            res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+                            if res.user:
+                                st.session_state["user"] = res.user.email
+                                st.rerun()
+                        except Exception as e:
+                            st.error("Galat Email ya Password! Kripya dobara check karein.")
+    st.stop()  # Screener code tab tak run nahi hoga jab tak login verify na ho
+
+# ================= SCREENER APP (LOGIN COMPLETED) =================
+
+# Master Stock Data
 MASTER_STOCKS = {
     "RELIANCE": "2885", "TCS": "11536", "HDFCBANK": "1333", "INFY": "1594",
     "ICICIBANK": "4963", "BHARTIARTL": "10604", "SBIN": "3045", "LT": "11483",
@@ -87,12 +130,10 @@ def get_angel_client():
         client_code = st.secrets["ANGEL_CLIENT_CODE"]
         pin = st.secrets["ANGEL_PIN"]
         totp_key = st.secrets["ANGEL_TOTP_KEY"]
-        
         totp = pyotp.TOTP(totp_key).now()
         smart_api = SmartConnect(api_key=api_key)
         data = smart_api.generateSession(client_code, pin, totp)
-        if data['status']:
-            return smart_api
+        if data['status']: return smart_api
         return None
     except Exception:
         return None
@@ -109,26 +150,18 @@ def calculate_atr(df, period=14):
     high_close = (df['High'] - df['Close'].shift()).abs()
     low_close = (df['Low'] - df['Close'].shift()).abs()
     ranges = pd.concat([high_low, high_close, low_close], axis=1)
-    true_range = ranges.max(axis=1)
-    return true_range.rolling(period).mean()
+    return ranges.max(axis=1).rolling(period).mean()
 
 def fetch_and_prepare_df(smart_api, token):
     to_date = datetime.now().strftime("%Y-%m-%d %H:%M")
     from_date = (datetime.now() - timedelta(days=150)).strftime("%Y-%m-%d 09:15")
     res = smart_api.getCandleData({
-        "exchange": "NSE",
-        "symboltoken": token,
-        "interval": "ONE_DAY",
-        "fromdate": from_date,
-        "todate": to_date
+        "exchange": "NSE", "symboltoken": token,
+        "interval": "ONE_DAY", "fromdate": from_date, "todate": to_date
     })
-    if not res.get('status') or not res.get('data'):
-        return None
-        
+    if not res.get('status') or not res.get('data'): return None
     df = pd.DataFrame(res['data'], columns=['Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
-    if len(df) < 35:
-        return None
-        
+    if len(df) < 35: return None
     df['Time'] = pd.to_datetime(df['Time'])
     df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
     df['EMA50'] = df['Close'].ewm(span=50, adjust=False).mean()
@@ -143,65 +176,46 @@ def fetch_and_prepare_df(smart_api, token):
 
 def render_chart(df, symbol, target_val, sl_val):
     fig = make_subplots(
-        rows=3, cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.03,
-        row_heights=[0.60, 0.20, 0.20],
-        subplot_titles=[f"{symbol} Daily Matrix (EMA + Bollinger Bands)", "Volume Surge", "RSI (14) Momentum"]
+        rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.60, 0.20, 0.20],
+        subplot_titles=[f"{symbol} Matrix", "Volume", "RSI (14)"]
     )
-    
-    # 1. Price + Candles + MAs + BBands
-    fig.add_trace(go.Candlestick(
-        x=df['Time'], open=df['Open'], high=df['High'],
-        low=df['Low'], close=df['Close'], name="Price",
-        increasing_line_color='#00e699', decreasing_line_color='#ff3366'
-    ), row=1, col=1)
-    
+    fig.add_trace(go.Candlestick(x=df['Time'], open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name="Price", increasing_line_color='#00e699', decreasing_line_color='#ff3366'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA20'], line=dict(color='#ff9900', width=1.5), name="EMA 20"), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA50'], line=dict(color='#00bfff', width=1.5), name="EMA 50"), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Upper'], line=dict(color='#7d8b99', width=1, dash='dot'), name="Upper BB"), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Lower'], line=dict(color='#7d8b99', width=1, dash='dot'), name="Lower BB"), row=1, col=1)
-    
     if target_val and sl_val:
         fig.add_hline(y=target_val, line_dash="dash", line_color="#00e699", annotation_text=f" Target: ₹{target_val}", annotation_position="top right", row=1, col=1)
         fig.add_hline(y=sl_val, line_dash="dash", line_color="#ff3366", annotation_text=f" SL: ₹{sl_val}", annotation_position="bottom right", row=1, col=1)
-    
-    # 2. Volume
     vol_colors = ['#00e699' if c >= o else '#ff3366' for c, o in zip(df['Close'], df['Open'])]
     fig.add_trace(go.Bar(x=df['Time'], y=df['Volume'], marker_color=vol_colors, name="Volume", opacity=0.8), row=2, col=1)
     fig.add_trace(go.Scatter(x=df['Time'], y=df['Vol_SMA20'], line=dict(color='#ffbb33', width=1), name="Vol Avg 20"), row=2, col=1)
-    
-    # 3. RSI
     fig.add_trace(go.Scatter(x=df['Time'], y=df['RSI'], line=dict(color='#9966ff', width=1.8), name="RSI"), row=3, col=1)
     fig.add_hline(y=70, line_dash="dash", line_color="#ff3366", opacity=0.6, row=3, col=1)
     fig.add_hline(y=30, line_dash="dash", line_color="#00e699", opacity=0.6, row=3, col=1)
-    
-    fig.update_layout(
-        paper_bgcolor='#0b0e14',
-        plot_bgcolor='#11151f',
-        xaxis_rangeslider_visible=False,
-        height=660,
-        dragmode='pan',
-        margin=dict(l=10, r=10, t=30, b=10),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="#8b9bb4", size=10)),
-        font=dict(family="Courier New, monospace", color="#8b9bb4")
-    )
+    fig.update_layout(paper_bgcolor='#0b0e14', plot_bgcolor='#11151f', xaxis_rangeslider_visible=False, height=660, dragmode='pan', margin=dict(l=10, r=10, t=30, b=10), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="#8b9bb4", size=10)), font=dict(family="Courier New, monospace", color="#8b9bb4"))
     fig.update_yaxes(gridcolor='#1e2638', fixedrange=False, row=1, col=1)
     fig.update_yaxes(gridcolor='#1e2638', fixedrange=False, row=2, col=1)
     fig.update_yaxes(gridcolor='#1e2638', fixedrange=True, range=[10, 90], row=3, col=1)
     fig.update_xaxes(gridcolor='#1e2638')
-    
     st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
 
-# --- BRANDING HEADER ---
+# --- HEADER WITH USER BADGE & LOGOUT ---
 c_title, c_badge = st.columns([3, 1])
 with c_title:
     st.markdown("<h2 style='margin-bottom:0;'>⚡ SANDEEP KUMAR <span style='font-size:1rem;color:#00d2c4;'>PRO TERMINAL</span></h2>", unsafe_allow_html=True)
-    st.caption("Quantitative Swing Screener • Angel One Live Exchange Engine")
+    st.caption(f"Authenticated as: {st.session_state['user']} • Angel One Live Exchange Engine")
 with c_badge:
-    st.markdown("<div style='text-align:right;padding-top:10px;'><span style='background:#102a27;color:#00e699;padding:4px 10px;border-radius:10px;font-size:0.75rem;border:1px solid #00e699;'>LIVE SYNC</span></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right;padding-top:10px;'><span style='background:#102a27;color:#00e699;padding:4px 10px;border-radius:10px;font-size:0.75rem;border:1px solid #00e699;'>AUTHENTICATED</span></div>", unsafe_allow_html=True)
 
-# Sidebar
+# Sidebar with Logout Button
+st.sidebar.markdown(f"**Logged in as:** `{st.session_state['user']}`")
+if st.sidebar.button("🚪 Log Out", use_container_width=True):
+    supabase.auth.sign_out()
+    st.session_state["user"] = None
+    st.rerun()
+
+st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎛️ Risk Engine")
 account_capital = st.sidebar.number_input("Portfolio Capital (₹)", value=100000, step=25000)
 risk_per_trade_pct = st.sidebar.slider("Risk Per Trade (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
@@ -213,7 +227,6 @@ st.markdown("---")
 # 🔍 SEARCH BAR SECTION
 st.subheader("🔍 Instant Stock Search & Chart Inspector")
 all_stock_names = sorted(list(MASTER_STOCKS.keys()))
-
 col_search, col_btn = st.columns([3, 1])
 with col_search:
     searched_stock = st.selectbox("Stock search karein (Jaise: RELIANCE, TATAMOTORS, ZOMATO):", all_stock_names)
@@ -241,10 +254,7 @@ if search_clicked or st.session_state.get("active_search") == searched_stock:
                 m2.metric(f"Target +{target_pct_choice}%", f"₹{tgt}")
                 m3.metric("ATR Stop-Loss", f"₹{sl}")
                 m4.metric("RSI (14)", f"{rsi}")
-                
                 render_chart(df_search, searched_stock, tgt, sl)
-            else:
-                st.error("Data load nahi ho paya. Kripya dobara try karein.")
 
 st.markdown("---")
 
@@ -253,7 +263,7 @@ st.subheader("⚡ Automated Momentum Screener")
 if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
     smart_api = get_angel_client()
     if not smart_api:
-        st.error("Authentication failed. Check your Secrets.")
+        st.error("Angel One session fail ho gaya. Secrets check karein.")
     else:
         with st.spinner("Screening high momentum setups..."):
             all_results = []
@@ -266,15 +276,9 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
                 try:
                     df = fetch_and_prepare_df(smart_api, token)
                     if df is None: continue
-                    
-                    last = df.iloc[-1]
-                    prev = df.iloc[-2]
-                    cmp = float(last['Close'])
-                    ema20 = float(last['EMA20'])
-                    ema50 = float(last['EMA50'])
-                    rsi = float(last['RSI'])
-                    vol = float(last['Volume'])
-                    avg_vol = float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
+                    last, prev = df.iloc[-1], df.iloc[-2]
+                    cmp, ema20, ema50 = float(last['Close']), float(last['EMA20']), float(last['EMA50'])
+                    rsi, vol, avg_vol = float(last['RSI']), float(last['Volume']), float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
                     atr = float(last['ATR']) if not pd.isna(last['ATR']) else (cmp * 0.02)
                     
                     score = 0
@@ -297,20 +301,13 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
                         
                         candles_store[sym] = df
                         all_results.append({
-                            "Symbol": sym,
-                            "Score": f"{score}%",
-                            "CMP (₹)": round(cmp, 2),
-                            f"Target +{target_pct_choice}%": target_price,
-                            "Smart SL": stop_loss,
-                            "RSI": round(rsi, 1),
-                            "Vol Ratio": f"{round(vol_ratio, 2)}x",
-                            "Position Qty": qty,
-                            "Deploy Cap (₹)": trade_capital,
-                            "_score": score
+                            "Symbol": sym, "Score": f"{score}%", "CMP (₹)": round(cmp, 2),
+                            f"Target +{target_pct_choice}%": target_price, "Smart SL": stop_loss,
+                            "RSI": round(rsi, 1), "Vol Ratio": f"{round(vol_ratio, 2)}x",
+                            "Position Qty": qty, "Deploy Cap (₹)": trade_capital, "_score": score
                         })
                 except Exception:
                     continue
-                    
             progress.empty()
             if all_results:
                 all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
