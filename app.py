@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Dark Professional UI CSS
+# Dark Terminal CSS
 st.markdown("""
 <style>
     .stApp { background-color: #0b0e14; color: #e1e7ec; }
@@ -42,30 +42,21 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Header
-c_head, c_live = st.columns([3, 1])
-with c_head:
-    st.markdown("<h2 style='margin-bottom:0;'>⚡ ALPHAPULSE <span style='font-size:1rem;color:#00d2c4;'>TERMINAL</span></h2>", unsafe_allow_html=True)
-    st.caption("Angel One SmartAPI Feed • Triple Pane Multi-Indicator Matrix")
-with c_live:
-    st.markdown("<div style='text-align:right;padding-top:10px;'><span style='background:#102a27;color:#00e699;padding:4px 10px;border-radius:10px;font-size:0.75rem;border:1px solid #00e699;'>FEED READY</span></div>", unsafe_allow_html=True)
-
-st.markdown("---")
-
-# Sidebar
-st.sidebar.markdown("### 🎛️ Risk Engine")
-account_capital = st.sidebar.number_input("Portfolio Capital (₹)", value=100000, step=25000)
-risk_per_trade_pct = st.sidebar.slider("Risk Per Trade (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
-target_pct_choice = st.sidebar.slider("Target Return (%)", min_value=8, max_value=15, value=10, step=1)
-min_score = st.sidebar.slider("Minimum Setup Score", min_value=50, max_value=85, value=60, step=5)
-
-ANGEL_UNIVERSE = {
+# Master Universe Dictionary (NSE Symbol: Angel Token)
+MASTER_STOCKS = {
     "RELIANCE": "2885", "TCS": "11536", "HDFCBANK": "1333", "INFY": "1594",
     "ICICIBANK": "4963", "BHARTIARTL": "10604", "SBIN": "3045", "LT": "11483",
     "ITC": "1660", "TATAMOTORS": "3456", "AXISBANK": "5900", "KOTAKBANK": "1922",
     "TITAN": "3506", "BAJFINANCE": "317", "SUNPHARMA": "3351", "NTPC": "11630",
     "POWERGRID": "14977", "TATASTEEL": "3499", "COALINDIA": "20374", "VEDL": "3063",
-    "HINDALCO": "1363", "BEL": "383", "HAL": "2303", "DLF": "14732", "TRENT": "1964"
+    "HINDALCO": "1363", "BEL": "383", "HAL": "2303", "DLF": "14732", "TRENT": "1964",
+    "ADANIENT": "25", "ADANIPORTS": "15083", "ASIANPAINT": "236", "BAJAJFINSV": "16675",
+    "BPCL": "526", "BRITANNIA": "547", "CIPLA": "694", "DIVISLAB": "10940",
+    "DRREDDY": "881", "EICHERMOT": "910", "GRASIM": "1232", "HCLTECH": "7229",
+    "HEROMOTOCO": "1348", "HINDUNILVR": "1394", "INDUSINDBK": "5258", "JSWSTEEL": "11723",
+    "MARUTI": "10999", "NESTLEIND": "17963", "ONGC": "2475", "SBILIFE": "21808",
+    "TECHM": "13538", "ULTRACEMCO": "11532", "WIPRO": "3787", "ZOMATO": "5097",
+    "JIOFIN": "18143", "IRFC": "160", "RVNL": "13745", "BHEL": "438", "PNB": "10666"
 }
 
 def get_angel_client():
@@ -81,8 +72,7 @@ def get_angel_client():
         if data['status']:
             return smart_api
         return None
-    except Exception as e:
-        st.sidebar.error(f"Auth Error: {e}")
+    except Exception:
         return None
 
 def calculate_rsi(series, period=14):
@@ -100,56 +90,159 @@ def calculate_atr(df, period=14):
     true_range = ranges.max(axis=1)
     return true_range.rolling(period).mean()
 
-if st.button("⚡ EXECUTE MARKET SCAN"):
+def fetch_and_prepare_df(smart_api, token):
+    to_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+    from_date = (datetime.now() - timedelta(days=150)).strftime("%Y-%m-%d 09:15")
+    res = smart_api.getCandleData({
+        "exchange": "NSE",
+        "symboltoken": token,
+        "interval": "ONE_DAY",
+        "fromdate": from_date,
+        "todate": to_date
+    })
+    if not res.get('status') or not res.get('data'):
+        return None
+        
+    df = pd.DataFrame(res['data'], columns=['Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
+    if len(df) < 35:
+        return None
+        
+    df['Time'] = pd.to_datetime(df['Time'])
+    df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
+    df['EMA50'] = df['Close'].ewm(span=50, adjust=False).mean()
+    df['BB_Mid'] = df['Close'].rolling(20).mean()
+    df['BB_Std'] = df['Close'].rolling(20).std()
+    df['BB_Upper'] = df['BB_Mid'] + (2 * df['BB_Std'])
+    df['BB_Lower'] = df['BB_Mid'] - (2 * df['BB_Std'])
+    df['Vol_SMA20'] = df['Volume'].rolling(20).mean()
+    df['RSI'] = calculate_rsi(df['Close'], 14)
+    df['ATR'] = calculate_atr(df, 14)
+    return df
+
+def render_chart(df, symbol, target_val, sl_val):
+    fig = make_subplots(
+        rows=3, cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.03,
+        row_heights=[0.60, 0.20, 0.20],
+        subplot_titles=[f"{symbol} Daily Matrix", "Volume Surge", "RSI (14)"]
+    )
+    
+    # Pane 1: Candles + Indicators
+    fig.add_trace(go.Candlestick(
+        x=df['Time'], open=df['Open'], high=df['High'],
+        low=df['Low'], close=df['Close'], name="Price",
+        increasing_line_color='#00e699', decreasing_line_color='#ff3366'
+    ), row=1, col=1)
+    
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA20'], line=dict(color='#ff9900', width=1.5), name="EMA 20"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA50'], line=dict(color='#00bfff', width=1.5), name="EMA 50"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Upper'], line=dict(color='#7d8b99', width=1, dash='dot'), name="Upper BB"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Lower'], line=dict(color='#7d8b99', width=1, dash='dot'), name="Lower BB"), row=1, col=1)
+    
+    if target_val and sl_val:
+        fig.add_hline(y=target_val, line_dash="dash", line_color="#00e699", annotation_text=f" Target: ₹{target_val}", annotation_position="top right", row=1, col=1)
+        fig.add_hline(y=sl_val, line_dash="dash", line_color="#ff3366", annotation_text=f" SL: ₹{sl_val}", annotation_position="bottom right", row=1, col=1)
+    
+    # Pane 2: Volume
+    vol_colors = ['#00e699' if c >= o else '#ff3366' for c, o in zip(df['Close'], df['Open'])]
+    fig.add_trace(go.Bar(x=df['Time'], y=df['Volume'], marker_color=vol_colors, name="Volume", opacity=0.8), row=2, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['Vol_SMA20'], line=dict(color='#ffbb33', width=1), name="Vol Avg 20"), row=2, col=1)
+    
+    # Pane 3: RSI
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['RSI'], line=dict(color='#9966ff', width=1.8), name="RSI"), row=3, col=1)
+    fig.add_hline(y=70, line_dash="dash", line_color="#ff3366", opacity=0.6, row=3, col=1)
+    fig.add_hline(y=30, line_dash="dash", line_color="#00e699", opacity=0.6, row=3, col=1)
+    
+    fig.update_layout(
+        paper_bgcolor='#0b0e14',
+        plot_bgcolor='#11151f',
+        xaxis_rangeslider_visible=False,
+        height=660,
+        dragmode='pan',
+        margin=dict(l=10, r=10, t=30, b=10),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="#8b9bb4", size=10)),
+        font=dict(family="Courier New, monospace", color="#8b9bb4")
+    )
+    fig.update_yaxes(gridcolor='#1e2638', fixedrange=False, row=1, col=1)
+    fig.update_yaxes(gridcolor='#1e2638', fixedrange=False, row=2, col=1)
+    fig.update_yaxes(gridcolor='#1e2638', fixedrange=True, range=[10, 90], row=3, col=1)
+    fig.update_xaxes(gridcolor='#1e2638')
+    
+    st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
+
+# Header & Sidebar
+st.markdown("<h2 style='margin-bottom:0;'>⚡ ALPHAPULSE <span style='font-size:1rem;color:#00d2c4;'>TERMINAL</span></h2>", unsafe_allow_html=True)
+st.caption("Angel One SmartAPI Live Engine • Full Market Search Bar Enabled")
+
+st.sidebar.markdown("### 🎛️ Risk Engine")
+account_capital = st.sidebar.number_input("Portfolio Capital (₹)", value=100000, step=25000)
+risk_per_trade_pct = st.sidebar.slider("Risk Per Trade (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
+target_pct_choice = st.sidebar.slider("Target Return (%)", min_value=8, max_value=15, value=10, step=1)
+min_score = st.sidebar.slider("Minimum Setup Score", min_value=50, max_value=85, value=60, step=5)
+
+st.markdown("---")
+
+# 🔍 SEARCH BAR SECTION (ANY STOCK)
+st.subheader("🔍 Instant Stock Search & Chart Inspector")
+all_stock_names = sorted(list(MASTER_STOCKS.keys()))
+
+col_search, col_btn = st.columns([3, 1])
+with col_search:
+    searched_stock = st.selectbox("Stock search karein ya type karein (Jaise: RELIANCE, TATAMOTORS, ZOMATO):", all_stock_names)
+with col_btn:
+    st.write("")
+    st.write("")
+    search_clicked = st.button("📊 Open Chart", use_container_width=True)
+
+if search_clicked or st.session_state.get("active_search") == searched_stock:
+    st.session_state["active_search"] = searched_stock
+    smart_api = get_angel_client()
+    if smart_api:
+        with st.spinner(f"Fetching live technicals for {searched_stock}..."):
+            token = MASTER_STOCKS[searched_stock]
+            df_search = fetch_and_prepare_df(smart_api, token)
+            if df_search is not None:
+                cmp = float(df_search.iloc[-1]['Close'])
+                atr = float(df_search.iloc[-1]['ATR']) if not pd.isna(df_search.iloc[-1]['ATR']) else (cmp * 0.02)
+                tgt = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
+                sl = round(cmp - (1.5 * atr), 2)
+                rsi = round(float(df_search.iloc[-1]['RSI']), 1)
+                
+                # Metric Strip
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("CMP", f"₹{round(cmp, 2)}")
+                m2.metric(f"Target +{target_pct_choice}%", f"₹{tgt}")
+                m3.metric("ATR Stop-Loss", f"₹{sl}")
+                m4.metric("RSI (14)", f"{rsi}")
+                
+                render_chart(df_search, searched_stock, tgt, sl)
+            else:
+                st.error("Data load nahi ho paya. Market timings check karein.")
+
+st.markdown("---")
+
+# 🚀 BATCH SCANNER SECTION
+st.subheader("⚡ Automated Momentum Screener")
+if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
     smart_api = get_angel_client()
     if not smart_api:
         st.error("Authentication failed. Check your Secrets.")
     else:
-        with st.spinner("Analyzing Candlestick patterns & Indicators..."):
+        with st.spinner("Screening high momentum setups..."):
             all_results = []
             candles_store = {}
             progress = st.progress(0)
             
-            to_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-            from_date = (datetime.now() - timedelta(days=150)).strftime("%Y-%m-%d 09:15")
-            
-            for idx, (sym, token) in enumerate(ANGEL_UNIVERSE.items()):
-                progress.progress((idx + 1) / len(ANGEL_UNIVERSE))
+            scan_universe = list(MASTER_STOCKS.items())[:25] # Top 25 for quick responsive scanning
+            for idx, (sym, token) in enumerate(scan_universe):
+                progress.progress((idx + 1) / len(scan_universe))
                 try:
-                    res = smart_api.getCandleData({
-                        "exchange": "NSE",
-                        "symboltoken": token,
-                        "interval": "ONE_DAY",
-                        "fromdate": from_date,
-                        "todate": to_date
-                    })
-                    if not res.get('status') or not res.get('data'):
-                        continue
-                        
-                    df = pd.DataFrame(res['data'], columns=['Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
-                    if len(df) < 50:
-                        continue
+                    df = fetch_and_prepare_df(smart_api, token)
+                    if df is None: continue
                     
-                    df['Time'] = pd.to_datetime(df['Time'])
-                    
-                    # Indicators Calculation
-                    df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
-                    df['EMA50'] = df['Close'].ewm(span=50, adjust=False).mean()
-                    
-                    # Bollinger Bands (20, 2)
-                    df['BB_Mid'] = df['Close'].rolling(20).mean()
-                    df['BB_Std'] = df['Close'].rolling(20).std()
-                    df['BB_Upper'] = df['BB_Mid'] + (2 * df['BB_Std'])
-                    df['BB_Lower'] = df['BB_Mid'] - (2 * df['BB_Std'])
-                    
-                    df['Vol_SMA20'] = df['Volume'].rolling(20).mean()
-                    df['RSI'] = calculate_rsi(df['Close'], 14)
-                    df['ATR'] = calculate_atr(df, 14)
-                    
-                    candles_store[sym] = df
                     last = df.iloc[-1]
                     prev = df.iloc[-2]
-                    
                     cmp = float(last['Close'])
                     ema20 = float(last['EMA20'])
                     ema50 = float(last['EMA50'])
@@ -161,25 +254,22 @@ if st.button("⚡ EXECUTE MARKET SCAN"):
                     score = 0
                     if cmp > ema20 > ema50: score += 35
                     elif cmp > ema20: score += 20
-                    
                     if 50 <= rsi <= 70: score += 30
                     elif 45 <= rsi < 50: score += 15
-                    
                     vol_ratio = vol / avg_vol
                     if vol_ratio >= 1.2: score += 25
                     elif vol_ratio >= 1.0: score += 15
-                    
                     if cmp > float(prev['High']): score += 10
                     
                     if score >= min_score:
                         risk_amt = account_capital * (risk_per_trade_pct / 100.0)
                         stop_loss = round(cmp - (1.5 * atr), 2)
                         risk_per_share = cmp - stop_loss
-                        
                         qty = int(risk_amt // risk_per_share) if risk_per_share > 0 else 0
                         trade_capital = round(qty * cmp, 2)
                         target_price = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
                         
+                        candles_store[sym] = df
                         all_results.append({
                             "Symbol": sym,
                             "Score": f"{score}%",
@@ -205,99 +295,6 @@ if st.button("⚡ EXECUTE MARKET SCAN"):
 if "adv_results" in st.session_state:
     data = st.session_state["adv_results"]
     if data:
-        # KPI Row
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Universe Scanned", f"{len(ANGEL_UNIVERSE)} Stocks")
-        m2.metric("Filtered Setups", f"{len(data)} Stocks")
-        m3.metric("Risk / Trade", f"₹{round(account_capital * (risk_per_trade_pct / 100.0), 2)}")
-        m4.metric("Avg Setup Score", f"{round(sum(int(x['Score'].replace('%','')) for x in data)/len(data))}%")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.success(f"🎯 Total {len(data)} Stocks Filtered!")
         st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
-        
-        st.markdown("---")
-        st.subheader("📈 Multi-Indicator Technical Board")
-        
-        selected_stock = st.selectbox("Select Setup to Inspect:", [i["Symbol"] for i in data])
-        stock_details = next(i for i in data if i["Symbol"] == selected_stock)
-        target_val = stock_details[f"Target +{target_pct_choice}%"]
-        sl_val = stock_details["Smart SL"]
-        
-        df_chart = st.session_state["adv_candles"][selected_stock]
-        
-        # 3 Panes: 1: Price & MAs & BBands, 2: Volume, 3: RSI
-        fig = make_subplots(
-            rows=3, cols=1,
-            shared_xaxes=True,
-            vertical_spacing=0.03,
-            row_heights=[0.60, 0.20, 0.20],
-            subplot_titles=[f"{selected_stock} Daily Candle + BB + EMA", "Volume Breakdown", "RSI (14) Momentum"]
-        )
-        
-        # --- PANE 1: PRICE & OVERLAYS ---
-        fig.add_trace(go.Candlestick(
-            x=df_chart['Time'], open=df_chart['Open'], high=df_chart['High'],
-            low=df_chart['Low'], close=df_chart['Close'], name="Price",
-            increasing_line_color='#00e699', decreasing_line_color='#ff3366'
-        ), row=1, col=1)
-        
-        # EMA 20 & 50
-        fig.add_trace(go.Scatter(x=df_chart['Time'], y=df_chart['EMA20'], line=dict(color='#ff9900', width=1.5), name="EMA 20"), row=1, col=1)
-        fig.add_trace(go.Scatter(x=df_chart['Time'], y=df_chart['EMA50'], line=dict(color='#00bfff', width=1.5), name="EMA 50"), row=1, col=1)
-        
-        # Bollinger Bands
-        fig.add_trace(go.Scatter(x=df_chart['Time'], y=df_chart['BB_Upper'], line=dict(color='#7d8b99', width=1, dash='dot'), name="Upper BB"), row=1, col=1)
-        fig.add_trace(go.Scatter(x=df_chart['Time'], y=df_chart['BB_Lower'], line=dict(color='#7d8b99', width=1, dash='dot'), name="Lower BB"), row=1, col=1)
-        
-        # Target & SL Lines
-        fig.add_hline(y=target_val, line_dash="dash", line_color="#00e699", annotation_text=f" Target: ₹{target_val}", annotation_position="top right", row=1, col=1)
-        fig.add_hline(y=sl_val, line_dash="dash", line_color="#ff3366", annotation_text=f" SL: ₹{sl_val}", annotation_position="bottom right", row=1, col=1)
-        
-        # --- PANE 2: VOLUME ---
-        vol_colors = ['#00e699' if c >= o else '#ff3366' for c, o in zip(df_chart['Close'], df_chart['Open'])]
-        fig.add_trace(go.Bar(x=df_chart['Time'], y=df_chart['Volume'], marker_color=vol_colors, name="Volume", opacity=0.8), row=2, col=1)
-        fig.add_trace(go.Scatter(x=df_chart['Time'], y=df_chart['Vol_SMA20'], line=dict(color='#ffbb33', width=1), name="Vol Avg 20"), row=2, col=1)
-        
-        # --- PANE 3: RSI ---
-        fig.add_trace(go.Scatter(x=df_chart['Time'], y=df_chart['RSI'], line=dict(color='#9966ff', width=1.8), name="RSI (14)"), row=3, col=1)
-        fig.add_hline(y=70, line_dash="dash", line_color="#ff3366", opacity=0.6, row=3, col=1)
-        fig.add_hline(y=30, line_dash="dash", line_color="#00e699", opacity=0.6, row=3, col=1)
-        
-        # FIX: DragMode Pan + Fixed Y-axis + Smooth Mobile Gesture
-        fig.update_layout(
-            paper_bgcolor='#0b0e14',
-            plot_bgcolor='#11151f',
-            xaxis_rangeslider_visible=False,
-            height=700,
-            dragmode='pan',  # Prevents accidental touch zoom-in
-            margin=dict(l=10, r=10, t=30, b=10),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="#8b9bb4", size=10)),
-            font=dict(family="Courier New, monospace", color="#8b9bb4")
-        )
-        
-        # Grid line configs
-        fig.update_yaxes(gridcolor='#1e2638', fixedrange=False, row=1, col=1)
-        fig.update_yaxes(gridcolor='#1e2638', fixedrange=False, row=2, col=1)
-        fig.update_yaxes(gridcolor='#1e2638', fixedrange=True, range=[10, 90], row=3, col=1)
-        fig.update_xaxes(gridcolor='#1e2638')
-        
-        # Plot with touch scroll protection
-        st.plotly_chart(
-            fig,
-            use_container_width=True,
-            config={
-                'scrollZoom': False,      # Mobile screen touch-zoom off
-                'displayModeBar': True,   # Shows reset & tools
-                'modeBarButtonsToRemove': ['select2d', 'lasso2d']
-            }
-        )
-        
-        # Execution Metrics
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Recommended Qty", f"{stock_details['Position Qty']} Shares")
-        c2.metric("Total Deployment", f"₹{stock_details['Deploy Cap (₹)']}")
-        c3.metric("Calculated Risk (SL)", f"-₹{round((stock_details['CMP (₹)'] - sl_val) * stock_details['Position Qty'], 2)}")
-        c4.metric("Target Gain", f"+₹{round((target_val - stock_details['CMP (₹)']) * stock_details['Position Qty'], 2)}")
-    else:
-        st.warning("No setup matched the score threshold today.")
-        
+                      
