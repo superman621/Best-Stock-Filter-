@@ -172,7 +172,11 @@ if st.session_state["user"] is None:
                     else:
                         try:
                             clean_reset = reset_email.replace("✉️", "").strip()
-                            supabase.auth.reset_password_for_email(clean_reset)
+                            supabase.auth.reset_password_for_email(
+    clean_reset, 
+    {"redirect_to": "https://beststockfilter.streamlit.app"}
+)
+
                             st.success("📩 Password reset link aapke email par bhej diya gaya hai! Inbox check karein.")
                         except Exception as e:
                             st.error(f"Reset Failed: {str(e)}")
