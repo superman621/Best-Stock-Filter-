@@ -15,11 +15,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Check if user is logged in
+# User Session State
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
-# Custom High-Contrast Professional & Glassmorphic CSS
+# Custom High-Contrast & Glassmorphic CSS
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -39,7 +39,7 @@ st.markdown("""
 
     /* ================= LOGIN THEME (IMAGE REPLICATION) ================= */
     .login-wrapper {
-        min-height: 85vh;
+        min-height: 82vh;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -82,7 +82,7 @@ st.markdown("""
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Glassmorphism Login Card Overlay */
+    /* Glassmorphism Card Overlay */
     div[data-testid="stForm"] {
         position: relative;
         z-index: 2;
@@ -101,7 +101,7 @@ st.markdown("""
         box-shadow: 0 25px 55px rgba(0, 114, 255, 0.25) !important;
     }
 
-    /* Pill-Shaped Inputs like Reference Image */
+    /* Pill-Shaped Inputs */
     .stTextInput div[data-baseweb="input"] {
         background-color: rgba(255, 255, 255, 0.16) !important;
         border: 1px solid rgba(255, 255, 255, 0.25) !important;
@@ -171,7 +171,7 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# ================= PROFESSIONAL AUTHENTICATION GATEWAY =================
+# ================= AUTHENTICATION GATEWAY =================
 if st.session_state["user"] is None:
     st.markdown("<div class='login-wrapper'>", unsafe_allow_html=True)
     
@@ -187,10 +187,9 @@ if st.session_state["user"] is None:
         auth_mode = st.radio("Access Level", ["Existing Member (Sign In)", "New Member (Sign Up)"], horizontal=True, label_visibility="collapsed")
         
         with st.form("auth_form"):
-            email = st.text_input("Username / Email", placeholder="👤  CodeByGaurav / email@address.com")
+            email = st.text_input("Username / Email", placeholder="👤  Username or email@address.com")
             password = st.text_input("Password", type="password", placeholder="🔒  ••••••••••••")
             
-            # Options (Remember me & Forgot Password style)
             st.markdown("""
             <div style='display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: rgba(255, 255, 255, 0.85); margin: 6px 2px 18px 2px;'>
                 <span><i class="fa-solid fa-square-check" style="color: #00b0ff; margin-right: 4px;"></i> Remember me</span>
@@ -211,11 +210,11 @@ if st.session_state["user"] is None:
                 if not email or not password:
                     st.error("⚠️ Email aur Password dono fill karein.")
                 elif len(password) < 6:
-                    st.error("⚠️ Password minimum 6 characters ka hona chahiye.")
+                    st.error("⚠️️ Password minimum 6 characters ka hona chahiye.")
                 else:
+                    clean_email = email.replace("👤", "").strip()
                     if "Sign Up" in auth_mode:
                         try:
-                            clean_email = email.replace("👤", "").strip()
                             res = supabase.auth.sign_up({"email": clean_email, "password": password})
                             if res.user:
                                 st.success("✅ Account ban gaya! Ab Sign In select karke login karein.")
@@ -223,7 +222,6 @@ if st.session_state["user"] is None:
                             st.error(f"Sign Up Failed: {str(e)}")
                     else:
                         try:
-                            clean_email = email.replace("👤", "").strip()
                             res = supabase.auth.sign_in_with_password({"email": clean_email, "password": password})
                             if res.user:
                                 st.session_state["user"] = res.user.email
@@ -232,7 +230,7 @@ if st.session_state["user"] is None:
                             st.error("❌ Invalid Email or Password. Dobara check karein.")
 
     st.markdown("</div>", unsafe_allow_html=True)
-    st.stop()  # Screener code post-login unlock hoga
+    st.stop()
 
 # ================= SCREENER APP (POST-LOGIN ACCESS) =================
 
@@ -336,7 +334,7 @@ with c_title:
 with c_badge:
     st.markdown("<div style='text-align:right;padding-top:10px;'><span style='background:#102a27;color:#00e699;padding:4px 12px;border-radius:12px;font-size:0.75rem;border:1px solid #00e699;'>LIVE SYNC</span></div>", unsafe_allow_html=True)
 
-# Sidebar with User Info & Logout
+# Sidebar
 st.sidebar.markdown(f"**Member:** `{st.session_state['user']}`")
 if st.sidebar.button("🚪 Log Out", use_container_width=True):
     supabase.auth.sign_out()
@@ -403,14 +401,24 @@ if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
                 progress.progress((idx + 1) / len(scan_universe))
                 try:
                     df = fetch_and_prepare_df(smart_api, token)
-                    if df is None: continue
+                    if df is None: 
+                        continue
                     last, prev = df.iloc[-1], df.iloc[-2]
                     cmp, ema20, ema50 = float(last['Close']), float(last['EMA20']), float(last['EMA50'])
-                    rsi, vol, avg_vol = float(last['RSI']), float(last['Volume']), float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
+                    rsi = float(last['RSI'])
+                    vol = float(last['Volume'])
+                    avg_vol = float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
                     atr = float(last['ATR']) if not pd.isna(last['ATR']) else (cmp * 0.02)
                     
                     score = 0
-                    if cmp > ema20 > ema50: score += 35
-                    elif cmp > ema20: score += 20
-                    if 50 <= rsi <= 70: score += 30
-   
+                    if cmp > ema20 > ema50: 
+                        score += 35
+                    elif cmp > ema20: 
+                        score += 20
+                    
+                    if 50 <= rsi <= 70: 
+                        score += 30
+                    elif 45 <= rsi < 50: 
+                        score += 15
+                    
+            
