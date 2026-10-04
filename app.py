@@ -2,12 +2,13 @@ import streamlit as st
 import streamlit.components.v1 as components
 import yfinance as yf
 import pandas as pd
-import plotly.graph_objects as go
 
-st.set_page_config(page_title="Pro Live Swing Screener", layout="wide")
-st.title("🎯 15-Day Swing Screener + Live Chart")
-st.caption("Uptrend + RSI + Volume Momentum Screen with Live Interactive Charts")
+# Page Configuration
+st.set_page_config(page_title="Pro 15-Day Swing Screener", layout="wide")
+st.title("🎯 Pro 15-Day Swing Screener (10% Target)")
+st.caption("Filters high-momentum stocks with Full Advanced TradingView Chart (All Indicators Supported)")
 
+# Liquid Momentum Watchlist
 WATCHLIST = [
     "TATAMOTORS.NS", "RELIANCE.NS", "SBIN.NS", "INFY.NS", "ICICIBANK.NS", 
     "ITC.NS", "TCS.NS", "HDFCBANK.NS", "BHARTIARTL.NS", "LT.NS", 
@@ -25,9 +26,9 @@ def calculate_rsi(series, period=14):
     rs = gain / (loss.replace(0, 0.0001))
     return 100 - (100 / (1 + rs))
 
-# Scan Button
+# Scan Market Button
 if st.button("🚀 Scan Market Now", use_container_width=True):
-    with st.spinner("Analyzing momentum setups..."):
+    with st.spinner("Stocks analyze ho rahe hain..."):
         all_results = []
         progress_bar = st.progress(0)
 
@@ -36,9 +37,11 @@ if st.button("🚀 Scan Market Now", use_container_width=True):
             try:
                 t = yf.Ticker(ticker)
                 df = t.history(period="6mo", interval="1d")
+                
                 if df.empty or len(df) < 50:
                     continue
 
+                # Technical Indicators
                 df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
                 df['EMA50'] = df['Close'].ewm(span=50, adjust=False).mean()
                 df['Vol_SMA20'] = df['Volume'].rolling(20).mean()
@@ -52,47 +55,57 @@ if st.button("🚀 Scan Market Now", use_container_width=True):
                 vol = float(last['Volume'])
                 avg_vol = float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
 
+                # Score System (Min 60% setup)
                 score = 0
-                if cmp > ema20 > ema50: score += 40
-                elif cmp > ema20: score += 20
-                if 50 <= rsi <= 72: score += 30
-                elif 45 <= rsi < 50: score += 15
+                if cmp > ema20 > ema50:
+                    score += 40
+                elif cmp > ema20:
+                    score += 20
+                    
+                if 50 <= rsi <= 72:
+                    score += 30
+                elif 45 <= rsi < 50:
+                    score += 15
 
                 vol_ratio = vol / avg_vol
-                if vol_ratio >= 1.2: score += 30
-                elif vol_ratio >= 0.9: score += 15
+                if vol_ratio >= 1.2:
+                    score += 30
+                elif vol_ratio >= 0.9:
+                    score += 15
 
                 if score >= 60:
                     clean_sym = ticker.replace(".NS", "")
                     all_results.append({
                         "Stock": clean_sym,
-                        "Ticker": ticker,
-                        "Score": f"{score}%",
+                        "Setup Score": f"{score}%",
                         "CMP (₹)": round(cmp, 2),
                         "Target 10% (₹)": round(cmp * 1.10, 2),
-                        "SL 5% (₹)": round(cmp * 0.95, 2),
+                        "Stop-Loss 5% (₹)": round(cmp * 0.95, 2),
                         "RSI": round(rsi, 1),
+                        "Vol Surge": f"{round(vol_ratio, 2)}x",
                         "_score": score
                     })
             except Exception:
                 continue
 
         progress_bar.empty()
+        
         if all_results:
             all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
-            for item in all_results: del item['_score']
+            for item in all_results:
+                del item['_score']
+        
         st.session_state["stocks_data"] = all_results
 
-# Display Table & Live Chart
+# Display Section
 if "stocks_data" in st.session_state:
     data = st.session_state["stocks_data"]
     if data:
-        st.success(f"🎯 Total {len(data)} Setups Found!")
-        display_df = pd.DataFrame(data).drop(columns=["Ticker"])
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        st.success(f"🎯 Total {len(data)} High-Probability Setups Filtered!")
+        st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
 
         st.markdown("---")
-        st.subheader("📈 Live Interactive Chart")
+        st.subheader("📊 Full Advanced TradingView Chart (All Indicators Enabled)")
 
         col1, col2 = st.columns([2, 1])
         with col1:
@@ -102,30 +115,48 @@ if "stocks_data" in st.session_state:
 
         tf_code = "D" if "Daily" in timeframe else ("60" if "1 Hour" in timeframe else "15")
 
-        # Live Embedded TradingView Frame (Direct Iframe - No Restrictions)
-        tv_embed_url = (
-            f"https://s.tradingview.com/widgetembed/?"
-            f"symbol=NSE%3A{selected_stock}"
-            f"&interval={tf_code}"
-            f"&theme=dark"
-            f"&style=1"
-            f"&timezone=Asia%2FKolkata"
-            f"&withdateranges=1"
-            f"&hideideas=1"
-        )
+        # Full Technical Chart Widget with Indicator Toolbar & Drawings
+        chart_html = f"""
+        <!-- TradingView Widget BEGIN -->
+        <div class="tradingview-widget-container" style="height:620px;width:100%">
+          <div id="tradingview_advanced" style="height:620px;width:100%"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+          <script type="text/javascript">
+          new TradingView.widget(
+          {{
+            "autosize": true,
+            "symbol": "NSE:{selected_stock}",
+            "interval": "{tf_code}",
+            "timezone": "Asia/Kolkata",
+            "theme": "dark",
+            "style": "1",
+            "locale": "in",
+            "enable_publishing": false,
+            "allow_symbol_change": true,
+            "hide_side_toolbar": false,
+            "withdateranges": true,
+            "show_popup_button": true,
+            "popup_width": "1000",
+            "popup_height": "650",
+            "studies": [
+              "STD;EMA",
+              "STD;RSI"
+            ],
+            "container_id": "tradingview_advanced"
+          }}
+          );
+          </script>
+        </div>
+        <!-- TradingView Widget END -->
+        """
 
-        components.html(
-            f"""
-            <iframe 
-                src="{tv_embed_url}" 
-                width="100%" 
-                height="520" 
-                frameborder="0" 
-                allowtransparency="true" 
-                scrolling="no" 
-                style="border-radius: 10px;">
-            </iframe>
-            """,
-            height=540
+        components.html(chart_html, height=640)
+
+        # Fallback 1-Tap Open Button
+        st.link_button(
+            f"🚀 Open {selected_stock} Full Chart in TradingView (App/Web)",
+            f"https://in.tradingview.com/chart/?symbol=NSE:{selected_stock}",
+            use_container_width=True
         )
-        
+    else:
+        st.warning("Aaj market close hone tak koi 60%+ score wala setup match nahi hua.")
