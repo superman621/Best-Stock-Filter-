@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from SmartApi import SmartConnect
 from supabase import create_client, Client
 
-# Page Setup
+# Page Setup - Phone me sidebar shuru me band rahegi
 st.set_page_config(
     page_title="Sandeep Kumar | Pro Terminal",
     page_icon="⚡",
@@ -130,7 +130,6 @@ if st.session_state["user"] is None:
             box-shadow: 0 10px 25px rgba(0, 176, 255, 0.7) !important;
         }
 
-        /* Outside Navigation Buttons */
         div[data-testid="stVerticalBlock"] > div.stButton > button {
             background: transparent !important;
             border: none !important;
@@ -173,10 +172,9 @@ if st.session_state["user"] is None:
                         try:
                             clean_reset = reset_email.replace("✉️", "").strip()
                             supabase.auth.reset_password_for_email(
-    clean_reset, 
-    {"redirect_to": "https://beststockfilter.streamlit.app"}
-)
-
+                                clean_reset, 
+                                {"redirect_to": "https://beststockfilter.streamlit.app"}
+                            )
                             st.success("📩 Password reset link aapke email par bhej diya gaya hai! Inbox check karein.")
                         except Exception as e:
                             st.error(f"Reset Failed: {str(e)}")
@@ -213,7 +211,7 @@ if st.session_state["user"] is None:
                     if not email or not password:
                         st.error("⚠️ Email aur Password dono fill karein.")
                     elif not is_login and not full_name:
-                        st.error("⚠️ Kripya apna Naam fill karein.")
+                        st.error("⚠️️ Kripya apna Naam fill karein.")
                     elif len(password) < 6:
                         st.error("⚠️ Password minimum 6 characters ka hona chahiye.")
                     else:
@@ -246,7 +244,6 @@ if st.session_state["user"] is None:
                             except Exception:
                                 st.error("❌ Invalid Credentials. Dobara check karein.")
 
-            # Form ke niche switch buttons (no nested columns)
             if is_login:
                 if st.button("Don't have an account? Register", key="switch_to_reg", use_container_width=True):
                     st.session_state["auth_mode"] = "register"
@@ -264,27 +261,57 @@ if st.session_state["user"] is None:
 # ================= POST-LOGIN TERMINAL THEME & APP =================
 st.markdown("""
 <style>
+    /* Global Background Fix */
     .stApp { 
         background: #080a0f !important; 
         color: #f1f5f9 !important; 
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important; 
     }
     .stApp::before { display: none !important; }
+    
+    /* Text Color Fix - Sabhi text clear dikhenge */
+    h1, h2, h3, h4, h5, p, span, label, div {
+        color: #f1f5f9 !important;
+    }
+
     section[data-testid="stSidebar"] { 
         background-color: #0f131c !important; 
         border-right: 1px solid #1e2638 !important; 
     }
-    div[data-testid="stMetric"] {
-        background-color: #111622;
-        border: 1px solid #1e2638;
-        padding: 14px 18px;
-        border-radius: 10px;
+
+    /* Selectbox dropdown fix */
+    div[data-baseweb="select"] {
+        background-color: #161c2b !important;
+        border: 1px solid #2d384e !important;
+        border-radius: 8px !important;
     }
-    div[data-testid="stMetric"] label { color: #8b9bb4 !important; font-size: 0.8rem; }
+    div[data-baseweb="select"] * {
+        color: #ffffff !important;
+    }
+
+    /* Screener Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #0052cc 0%, #00c49f 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        font-weight: 700 !important;
+        border-radius: 8px !important;
+        padding: 0.6rem 1.2rem !important;
+        box-shadow: 0 4px 15px rgba(0, 196, 159, 0.3) !important;
+    }
+
+    /* Metrics Cards */
+    div[data-testid="stMetric"] {
+        background-color: #111622 !important;
+        border: 1px solid #1e2638 !important;
+        padding: 12px 16px !important;
+        border-radius: 10px !important;
+    }
+    div[data-testid="stMetric"] label { color: #8b9bb4 !important; font-size: 0.8rem !important; }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
         color: #00d2c4 !important;
-        font-family: monospace;
-        font-weight: 700;
+        font-family: monospace !important;
+        font-weight: 700 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -389,24 +416,4 @@ c_title, c_badge = st.columns([3, 1])
 display_name = st.session_state.get('user_name', st.session_state['user'])
 with c_title:
     st.markdown("<h2 style='margin-bottom:0;'>⚡ SANDEEP KUMAR <span style='font-size:1rem;color:#00d2c4;'>PRO TERMINAL</span></h2>", unsafe_allow_html=True)
-    st.caption(f"Authenticated Member: {display_name} ({st.session_state['user']}) • Angel One Live Sync")
-with c_badge:
-    st.markdown("<div style='text-align:right;padding-top:10px;'><span style='background:#102a27;color:#00e699;padding:4px 12px;border-radius:12px;font-size:0.75rem;border:1px solid #00e699;'>LIVE SYNC</span></div>", unsafe_allow_html=True)
-
-# Sidebar with User Info & Logout
-st.sidebar.markdown(f"**Member:** `{display_name}`")
-if st.sidebar.button("🚪 Log Out", use_container_width=True):
-    supabase.auth.sign_out()
-    st.session_state["user"] = None
-    st.session_state["user_name"] = None
-    st.rerun()
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🎛️ Risk Engine")
-account_capital = st.sidebar.number_input("Portfolio Capital (₹)", value=100000, step=25000)
-risk_per_trade_pct = st.sidebar.slider("Risk Per Trade (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
-target_pct_choice = st.sidebar.slider("Target Return (%)", min_value=8, max_value=15, value=10, step=1)
-min_score = st.sidebar.slider("Minimum Setup Score", min_value=50, max_value=85, value=60, step=5)
-
-st.markdown("---")
-
+    st.
