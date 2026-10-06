@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from SmartApi import SmartConnect
 from supabase import create_client, Client
 
-# --- पेज सेटअप ---
+# --- Page Setup ---
 st.set_page_config(
     page_title="Sandeep Kumar | Pro Terminal 2.0",
     page_icon="⚡",
@@ -15,13 +15,121 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- स्टेट इनिशियलाइज़ेशन ---
+# --- State Initialization ---
 if "user" not in st.session_state:
     st.session_state["user"] = None
 if "user_name" not in st.session_state:
     st.session_state["user_name"] = None
 if "auth_mode" not in st.session_state:
     st.session_state["auth_mode"] = "login"
+if "lang" not in st.session_state:
+    st.session_state["lang"] = "English"
+
+# --- Translations Dictionary ---
+T = {
+    "English": {
+        "terminal_title": "PRO TERMINAL",
+        "live_feed": "Live Data Feed Active",
+        "member": "Authenticated Member",
+        "live_badge": "● LIVE ANGEL ONE",
+        "risk_engine": "Risk Configuration",
+        "portfolio_cap": "Portfolio Capital (₹)",
+        "risk_per_trade": "Risk Per Trade (%)",
+        "target_return": "Profit Target (%)",
+        "min_score": "Min Momentum Threshold",
+        "logout": "🚪 Log Out",
+        "tab_screener": "🚀 Automated Scanner",
+        "tab_search": "🔍 Deep Stock Inspector",
+        "select_asset": "Select Asset to Inspect",
+        "gen_matrix": "📊 Generate Matrix",
+        "scan_btn": "⚡ Scan Momentum Setups Across Universe",
+        "cmp": "Current Price (CMP)",
+        "target": "Target",
+        "sl": "ATR Stop Loss",
+        "rsi": "RSI (14 Day)",
+        "scanning": "Filtering momentum setups across watchlist...",
+        "fetching": "Fetching technical metrics...",
+        "filtered_title": "🎯 Screened Candidates",
+        "col_symbol": "Symbol",
+        "col_score": "Confidence Score",
+        "col_cmp": "CMP (₹)",
+        "col_target": "Target",
+        "col_sl": "Stop Loss",
+        "col_rsi": "RSI",
+        "col_vol": "Volume Surge",
+        "col_qty": "Position Qty",
+        "col_cap": "Required Capital (₹)",
+        "login": "Login",
+        "register": "Register",
+        "welcome_back": "Welcome Back",
+        "create_acc": "Create Account",
+        "full_name": "Full Name",
+        "email": "Email",
+        "password": "Password",
+        "continue": "Continue",
+        "forgot_pwd": "Forgot Password?",
+        "reset_access": "Reset Access",
+        "send_reset": "Send Reset Link",
+        "back_login": "⬅️ Back to Login",
+        "new_here": "Don't have an account? Register",
+        "already_acc": "Already have an account? Login",
+        "vol_chart": "VOLUME PROFILE",
+        "rsi_chart": "RSI (14) MOMENTUM",
+        "price_chart": "PRICE"
+    },
+    "Hindi": {
+        "terminal_title": "प्रो टर्मिनल",
+        "live_feed": "लाइव मार्केट फीड सक्रिय",
+        "member": "सक्रिय सदस्य",
+        "live_badge": "● लाइव एंजल वन",
+        "risk_engine": "रिस्क मैनेजमेंट इंजन",
+        "portfolio_cap": "कुल कैपिटल (₹)",
+        "risk_per_trade": "प्रति ट्रेड रिस्क (%)",
+        "target_return": "टारगेट रिटर्न (%)",
+        "min_score": "न्यूनतम मोमेंटम स्कोर",
+        "logout": "🚪 लॉग आउट",
+        "tab_screener": "🚀 ऑटोमेटेड स्क्रीनर",
+        "tab_search": "🔍 डीप स्टॉक चार्ट",
+        "select_asset": "स्टॉक चुनें",
+        "gen_matrix": "📊 चार्ट और मैट्रिक्स देखें",
+        "scan_btn": "⚡ हाई मोमेंटम स्टॉक्स स्कैन करें",
+        "cmp": "करंट प्राइस (CMP)",
+        "target": "टारगेट",
+        "sl": "ATR स्टॉप लॉस",
+        "rsi": "RSI (14 दिन)",
+        "scanning": "EMA, RSI और वॉल्यूम ब्रेकआउट्स स्कैन हो रहे हैं...",
+        "fetching": "टेक्निकल डेटा लोड हो रहा है...",
+        "filtered_title": "🎯 चुने गए स्टॉक्स",
+        "col_symbol": "स्टॉक",
+        "col_score": "मोमेंटम स्कोर",
+        "col_cmp": "CMP (₹)",
+        "col_target": "टारगेट",
+        "col_sl": "स्टॉप लॉस",
+        "col_rsi": "RSI",
+        "col_vol": "वॉल्यूम उछाल",
+        "col_qty": "शेयर संख्या (Qty)",
+        "col_cap": "जरूरी कैपिटल (₹)",
+        "login": "लॉगिन करें",
+        "register": "रजिस्टर करें",
+        "welcome_back": "वापसी पर स्वागत है",
+        "create_acc": "नया अकाउंट बनाएं",
+        "full_name": "पूरा नाम",
+        "email": "ईमेल",
+        "password": "पासवर्ड",
+        "continue": "आगे बढ़ें",
+        "forgot_pwd": "पासवर्ड भूल गए?",
+        "reset_access": "पासवर्ड रीसेट",
+        "send_reset": "रीसेट लिंक भेजें",
+        "back_login": "⬅️ लॉगिन पर वापस जाएं",
+        "new_here": "नया अकाउंट बनाएं (Register)",
+        "already_acc": "पहले से अकाउंट है? लॉगिन करें",
+        "vol_chart": "वॉल्यूम ट्रेंड",
+        "rsi_chart": "RSI (14) मोमेंटम",
+        "price_chart": "प्राइस"
+    }
+}
+
+txt = T[st.session_state["lang"]]
 
 @st.cache_resource
 def init_supabase() -> Client:
@@ -32,7 +140,7 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# ================= आधुनिक लॉगिन स्क्रीन =================
+# ================= LOGIN SCREEN =================
 if st.session_state["user"] is None:
     st.markdown("""
     <style>
@@ -68,48 +176,49 @@ if st.session_state["user"] is None:
     </style>
     """, unsafe_allow_html=True)
 
+    # Top-right Language Selector on Login Screen
+    _, col_lang = st.columns([4, 1])
+    with col_lang:
+        chosen_lang = st.selectbox("🌐 Language", ["English", "Hindi"], index=0 if st.session_state["lang"] == "English" else 1)
+        if chosen_lang != st.session_state["lang"]:
+            st.session_state["lang"] = chosen_lang
+            st.rerun()
+
     _, col_auth, _ = st.columns([1, 1.1, 1])
     with col_auth:
-        st.write("")
-        st.write("")
         mode = st.session_state["auth_mode"]
-        
-        # पासवर्ड रीसेट
         if mode == "forgot":
             with st.form("forgot_form"):
-                st.markdown("<h2 style='text-align:center; color:#fff;'>पासवर्ड रीसेट</h2>", unsafe_allow_html=True)
-                reset_email = st.text_input("ईमेल", placeholder="email@domain.com")
-                if st.form_submit_button("रीसेट लिंक भेजें", use_container_width=True):
+                st.markdown(f"<h2 style='text-align:center; color:#fff;'>{txt['reset_access']}</h2>", unsafe_allow_html=True)
+                reset_email = st.text_input(txt["email"], placeholder="email@domain.com")
+                if st.form_submit_button(txt["send_reset"], use_container_width=True):
                     try:
                         supabase.auth.reset_password_for_email(reset_email.strip())
-                        st.success("पासवर्ड रीसेट लिंक आपके ईमेल पर भेज दिया गया है!")
+                        st.success("Reset link sent!")
                     except Exception as e:
                         st.error(str(e))
-            if st.button("लॉगिन पर वापस जाएं", use_container_width=True):
+            if st.button(txt["back_login"], use_container_width=True):
                 st.session_state["auth_mode"] = "login"
                 st.rerun()
-        
-        # लॉगिन और रजिस्ट्रेशन
         else:
             is_login = mode == "login"
             with st.form("auth_form"):
-                st.markdown(f"<h2 style='text-align:center; color:#fff;'>{'लॉगिन करें' if is_login else 'नया अकाउंट बनाएं'}</h2>", unsafe_allow_html=True)
-                full_name = None if is_login else st.text_input("पूरा नाम", placeholder="राहुल शर्मा")
-                email = st.text_input("ईमेल", placeholder="email@domain.com")
-                password = st.text_input("पासवर्ड", type="password", placeholder="••••••••")
-                
-                if st.form_submit_button("आगे बढ़ें", use_container_width=True):
+                st.markdown(f"<h2 style='text-align:center; color:#fff;'>{txt['welcome_back'] if is_login else txt['create_acc']}</h2>", unsafe_allow_html=True)
+                full_name = None if is_login else st.text_input(txt["full_name"], placeholder="Rahul Sharma")
+                email = st.text_input(txt["email"], placeholder="email@domain.com")
+                password = st.text_input(txt["password"], type="password", placeholder="••••••••")
+                if st.form_submit_button(txt["continue"], use_container_width=True):
                     if not email or not password:
-                        st.error("कृपया सभी डिटेल्स भरें।")
+                        st.error("Fields cannot be empty.")
                     elif not is_login and not full_name:
-                        st.error("कृपया अपना नाम दर्ज करें।")
+                        st.error("Name required.")
                     else:
                         clean_email = f"{email}@terminal.com" if "@" not in email else email
                         if not is_login:
                             try:
                                 res = supabase.auth.sign_up({"email": clean_email, "password": password, "options": {"data": {"full_name": full_name.strip()}}})
                                 if res.user:
-                                    st.success("अकाउंट बन गया! अब लॉगिन करें।")
+                                    st.success("Account created! Please log in.")
                                     st.session_state["auth_mode"] = "login"
                             except Exception as e:
                                 st.error(str(e))
@@ -122,70 +231,38 @@ if st.session_state["user"] is None:
                                     st.session_state["user_name"] = meta.get("full_name", res.user.email.split("@")[0].title())
                                     st.rerun()
                             except Exception:
-                                st.error("गलत ईमेल या पासवर्ड। दोबारा जांचें।")
-            
+                                st.error("Invalid credentials.")
             if is_login:
-                if st.button("नया अकाउंट बनाएं (Register)", use_container_width=True):
+                if st.button(txt["new_here"], use_container_width=True):
                     st.session_state["auth_mode"] = "register"
                     st.rerun()
-                if st.button("पासवर्ड भूल गए?", use_container_width=True):
+                if st.button(txt["forgot_pwd"], use_container_width=True):
                     st.session_state["auth_mode"] = "forgot"
                     st.rerun()
             else:
-                if st.button("पहले से अकाउंट है? लॉगिन करें", use_container_width=True):
+                if st.button(txt["already_acc"], use_container_width=True):
                     st.session_state["auth_mode"] = "login"
                     st.rerun()
     st.stop()
 
-# ================= डैशबोर्ड डार्क टर्मिनल स्टाइल =================
+# ================= DASHBOARD UI THEME =================
 st.markdown("""
 <style>
-    /* डार्क टर्मिनल बेस */
-    .stApp {
-        background-color: #0b0f17 !important;
-        color: #f1f5f9 !important;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-    }
-    
-    /* साइडबार स्टाइल */
-    section[data-testid="stSidebar"] {
-        background: #080c14 !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
-    }
-    
-    /* मॉडर्न ग्लास कार्ड्स */
+    .stApp { background-color: #0b0f17 !important; color: #f1f5f9 !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; }
+    section[data-testid="stSidebar"] { background: #080c14 !important; border-right: 1px solid rgba(255, 255, 255, 0.06) !important; }
     .metric-card {
-        background: rgba(18, 24, 38, 0.75);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
-        padding: 16px 20px;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        background: rgba(18, 24, 38, 0.75); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
+        padding: 16px 20px; backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.25);
     }
     .metric-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
     .metric-card .val { font-size: 1.45rem; font-weight: 700; color: #f8fafc; font-family: 'JetBrains Mono', monospace; }
     .metric-card .sub { font-size: 0.75rem; color: #38bdf8; margin-top: 2px; }
-
-    /* बटन डिज़ाइन */
     .stButton > button {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        border-radius: 10px !important;
-        font-weight: 600 !important;
-        transition: all 0.2s ease-in-out !important;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important; color: #ffffff !important;
+        border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 10px !important; font-weight: 600 !important;
     }
-    .stButton > button:hover {
-        border-color: #38bdf8 !important;
-        box-shadow: 0 0 15px rgba(56, 189, 248, 0.3) !important;
-    }
-    
-    /* डेटाफ्रेम डिज़ाइन */
-    div[data-testid="stDataFrame"] {
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 10px !important;
-        overflow: hidden;
-    }
+    .stButton > button:hover { border-color: #38bdf8 !important; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3) !important; }
+    div[data-testid="stDataFrame"] { border: 1px solid rgba(255, 255, 255, 0.08) !important; border-radius: 10px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -250,30 +327,26 @@ def fetch_and_prepare_df(smart_api, token):
 def render_chart(df, symbol, target_val, sl_val):
     fig = make_subplots(
         rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.62, 0.18, 0.20],
-        subplot_titles=["", "वॉल्यूम ट्रेंड", "RSI (14) मोमेंटम"]
+        subplot_titles=["", txt["vol_chart"], txt["rsi_chart"]]
     )
-    # कैंडलस्टिक
     fig.add_trace(go.Candlestick(
         x=df['Time'], open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'],
-        name="प्राइस", increasing_line_color='#10b981', decreasing_line_color='#ef4444'
+        name=txt["price_chart"], increasing_line_color='#10b981', decreasing_line_color='#ef4444'
     ), row=1, col=1)
     
-    # EMAs और बोलिंजर बैंड्स
     fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA20'], line=dict(color='#f59e0b', width=1.5), name="EMA 20"), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA50'], line=dict(color='#38bdf8', width=1.5), name="EMA 50"), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Upper'], line=dict(color='rgba(148, 163, 184, 0.4)', width=1, dash='dot'), name="Upper Band"), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Lower'], line=dict(color='rgba(148, 163, 184, 0.4)', width=1, dash='dot'), name="Lower Band"), row=1, col=1)
     
     if target_val and sl_val:
-        fig.add_hline(y=target_val, line_dash="dash", line_color="#10b981", annotation_text=f" Target ₹{target_val}", row=1, col=1)
-        fig.add_hline(y=sl_val, line_dash="dash", line_color="#ef4444", annotation_text=f" Stop Loss ₹{sl_val}", row=1, col=1)
+        fig.add_hline(y=target_val, line_dash="dash", line_color="#10b981", annotation_text=f" {txt['target']} ₹{target_val}", row=1, col=1)
+        fig.add_hline(y=sl_val, line_dash="dash", line_color="#ef4444", annotation_text=f" {txt['sl']} ₹{sl_val}", row=1, col=1)
         
-    # वॉल्यूम
     v_colors = ['#10b981' if c >= o else '#ef4444' for c, o in zip(df['Close'], df['Open'])]
-    fig.add_trace(go.Bar(x=df['Time'], y=df['Volume'], marker_color=v_colors, opacity=0.7, name="वॉल्यूम"), row=2, col=1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['Vol_SMA20'], line=dict(color='#fbbf24', width=1), name="वॉल्यूम SMA 20"), row=2, col=1)
+    fig.add_trace(go.Bar(x=df['Time'], y=df['Volume'], marker_color=v_colors, opacity=0.7, name="Volume"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['Vol_SMA20'], line=dict(color='#fbbf24', width=1), name="Vol MA"), row=2, col=1)
     
-    # RSI इंडिकेटर
     fig.add_trace(go.Scatter(x=df['Time'], y=df['RSI'], line=dict(color='#a855f7', width=1.7), name="RSI"), row=3, col=1)
     fig.add_hrect(y0=30, y1=70, fillcolor="#38bdf8", opacity=0.05, line_width=0, row=3, col=1)
     fig.add_hline(y=70, line_dash="dot", line_color="#ef4444", row=3, col=1)
@@ -289,58 +362,65 @@ def render_chart(df, symbol, target_val, sl_val):
     fig.update_yaxes(gridcolor='#1e293b')
     st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': True, 'displayModeBar': False})
 
-# --- हेडर बार ---
+# --- NAVIGATION HEADER ---
 col_head, col_status = st.columns([3, 1])
 display_user = st.session_state.get('user_name', 'Trader')
 with col_head:
     st.markdown(f"""
     <div style='display:flex; align-items:center; gap:12px;'>
-        <h2 style='margin:0; font-size:1.8rem; font-weight:800;'>⚡ PRO TERMINAL <span style='color:#38bdf8; font-size:0.9rem; border:1px solid #0284c7; padding:2px 8px; border-radius:6px;'>v2.0</span></h2>
+        <h2 style='margin:0; font-size:1.8rem; font-weight:800;'>⚡ SANDEEP KUMAR <span style='color:#38bdf8; font-size:0.9rem; border:1px solid #0284c7; padding:2px 8px; border-radius:6px;'>{txt['terminal_title']}</span></h2>
     </div>
-    <p style='color:#64748b; margin:2px 0 0 0; font-size:0.85rem;'>लाइव मार्केट फीड सक्रिय • सदस्य: <span style='color:#94a3b8;'>{display_user}</span></p>
+    <p style='color:#64748b; margin:2px 0 0 0; font-size:0.85rem;'>{txt['live_feed']} • {txt['member']}: <span style='color:#94a3b8;'>{display_user}</span></p>
     """, unsafe_allow_html=True)
 
 with col_status:
-    st.markdown("""
+    st.markdown(f"""
     <div style='text-align:right; margin-top:8px;'>
         <span style='background:rgba(16, 185, 129, 0.15); color:#10b981; border:1px solid rgba(16, 185, 129, 0.3); padding:6px 14px; border-radius:20px; font-size:0.75rem; font-weight:600;'>
-            ● LIVE ANGEL ONE
+            {txt['live_badge']}
         </span>
     </div>
     """, unsafe_allow_html=True)
 
-# --- साइडबार सेटिंग्स ---
-st.sidebar.markdown(f"**अकाउंट:** `{display_user}`")
-if st.sidebar.button("लॉग आउट (Log Out)", use_container_width=True):
+# --- SIDEBAR (Language Toggle & Risk Config) ---
+st.sidebar.markdown(f"**{txt['member']}:** `{display_user}`")
+
+# Main Language Selector
+selected_lang = st.sidebar.selectbox("🌐 Language / भाषा", ["English", "Hindi"], index=0 if st.session_state["lang"] == "English" else 1)
+if selected_lang != st.session_state["lang"]:
+    st.session_state["lang"] = selected_lang
+    st.rerun()
+
+if st.sidebar.button(txt["logout"], use_container_width=True):
     supabase.auth.sign_out()
     st.session_state["user"] = None
     st.session_state["user_name"] = None
     st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("#### ⚙️ रिस्क मैनेजमेंट इंजन")
-account_capital = st.sidebar.number_input("कुल कैपिटल (₹)", value=100000, step=10000)
-risk_per_trade_pct = st.sidebar.slider("प्रति ट्रेड रिस्क (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
-target_pct_choice = st.sidebar.slider("टारगेट रिटर्न (%)", min_value=5, max_value=25, value=10, step=1)
-min_score = st.sidebar.slider("न्यूनतम मोमेंटम स्कोर", min_value=40, max_value=85, value=60, step=5)
+st.sidebar.markdown(f"#### ⚙️ {txt['risk_engine']}")
+account_capital = st.sidebar.number_input(txt["portfolio_cap"], value=100000, step=10000)
+risk_per_trade_pct = st.sidebar.slider(txt["risk_per_trade"], min_value=0.5, max_value=3.0, value=1.5, step=0.25)
+target_pct_choice = st.sidebar.slider(txt["target_return"], min_value=5, max_value=25, value=10, step=1)
+min_score = st.sidebar.slider(txt["min_score"], min_value=40, max_value=85, value=60, step=5)
 
 st.write("")
 
-# --- दो मुख्य टैब्स ---
-tab_screener, tab_search = st.tabs(["🚀 ऑटोमेटेड स्क्रीनर", "🔍 डीप स्टॉक चार्ट"])
+# --- TABS ---
+tab_screener, tab_search = st.tabs([txt["tab_screener"], txt["tab_search"]])
 
 with tab_search:
     c_s1, c_s2 = st.columns([3, 1])
     with c_s1:
-        searched_stock = st.selectbox("स्टॉक चुनें", sorted(list(MASTER_STOCKS.keys())), label_visibility="collapsed")
+        searched_stock = st.selectbox(txt["select_asset"], sorted(list(MASTER_STOCKS.keys())), label_visibility="collapsed")
     with c_s2:
-        btn_search = st.button("चार्ट और मैट्रिक्स देखें", use_container_width=True)
+        btn_search = st.button(txt["gen_matrix"], use_container_width=True)
 
     if btn_search or st.session_state.get("active_search") == searched_stock:
         st.session_state["active_search"] = searched_stock
         api = get_angel_client()
         if api:
-            with st.spinner("टेक्निकल डेटा लोड हो रहा है..."):
+            with st.spinner(txt["fetching"]):
                 df_search = fetch_and_prepare_df(api, MASTER_STOCKS[searched_stock])
                 if df_search is not None:
                     cmp = float(df_search.iloc[-1]['Close'])
@@ -349,23 +429,22 @@ with tab_search:
                     sl = round(cmp - (1.5 * atr), 2)
                     rsi = round(float(df_search.iloc[-1]['RSI']), 1)
                     
-                    # मॉडर्न कार्ड्स
                     k1, k2, k3, k4 = st.columns(4)
-                    k1.markdown(f"<div class='metric-card'><div class='label'>करंट प्राइस (CMP)</div><div class='val'>₹{cmp:,.2f}</div><div class='sub'>लाइव मार्केट रेट</div></div>", unsafe_allow_html=True)
-                    k2.markdown(f"<div class='metric-card'><div class='label'>टारगेट (+{target_pct_choice}%)</div><div class='val' style='color:#10b981;'>₹{tgt:,.2f}</div><div class='sub'>पोटेंशियल गेन</div></div>", unsafe_allow_html=True)
-                    k3.markdown(f"<div class='metric-card'><div class='label'>ATR स्टॉप लॉस</div><div class='val' style='color:#ef4444;'>₹{sl:,.2f}</div><div class='sub'>ट्रेलिंग रिस्क लेवल</div></div>", unsafe_allow_html=True)
-                    k4.markdown(f"<div class='metric-card'><div class='label'>RSI (14 दिन)</div><div class='val' style='color:#a855f7;'>{rsi}</div><div class='sub'>{'बुलिश मोमेंटम' if 50 <= rsi <= 70 else 'न्यूट्रल/एक्स्ट्रीम'}</div></div>", unsafe_allow_html=True)
+                    k1.markdown(f"<div class='metric-card'><div class='label'>{txt['cmp']}</div><div class='val'>₹{cmp:,.2f}</div><div class='sub'>Live NSE Price</div></div>", unsafe_allow_html=True)
+                    k2.markdown(f"<div class='metric-card'><div class='label'>{txt['target']} (+{target_pct_choice}%)</div><div class='val' style='color:#10b981;'>₹{tgt:,.2f}</div><div class='sub'>Upside Target</div></div>", unsafe_allow_html=True)
+                    k3.markdown(f"<div class='metric-card'><div class='label'>{txt['sl']}</div><div class='val' style='color:#ef4444;'>₹{sl:,.2f}</div><div class='sub'>Trailing Protection</div></div>", unsafe_allow_html=True)
+                    k4.markdown(f"<div class='metric-card'><div class='label'>{txt['rsi']}</div><div class='val' style='color:#a855f7;'>{rsi}</div><div class='sub'>{'Bullish' if 50 <= rsi <= 70 else 'Neutral/Extreme'}</div></div>", unsafe_allow_html=True)
                     
                     st.write("")
                     render_chart(df_search, searched_stock, tgt, sl)
 
 with tab_screener:
-    if st.button("⚡ हाई मोमेंटम स्टॉक्स स्कैन करें", use_container_width=True):
+    if st.button(txt["scan_btn"], use_container_width=True):
         api = get_angel_client()
         if not api:
-            st.error("Angel One लॉगिन फ़ेल हुआ। API क्रेडेंशियल्स की जांच करें।")
+            st.error("Authentication to Angel One API failed. Recheck credentials.")
         else:
-            with st.spinner("EMA, RSI, वॉल्यूम और ब्रेकआउट्स स्कैन किए जा रहे हैं..."):
+            with st.spinner(txt["scanning"]):
                 all_results = []
                 candles_store = {}
                 progress_bar = st.progress(0)
@@ -405,15 +484,15 @@ with tab_screener:
                             
                             candles_store[sym] = df
                             all_results.append({
-                                "Symbol": sym,
-                                "Setup Score": score,
-                                "CMP (₹)": round(cmp, 2),
-                                f"Target (+{target_pct_choice}%)": target_price,
-                                "Stop Loss": stop_loss,
-                                "RSI": round(rsi, 1),
-                                "Volume Surge": f"{round(vol_ratio, 1)}x",
-                                "Recommended Qty": qty,
-                                "Capital Required": trade_capital,
+                                txt["col_symbol"]: sym,
+                                txt["col_score"]: score,
+                                txt["col_cmp"]: round(cmp, 2),
+                                f"{txt['col_target']} (+{target_pct_choice}%)": target_price,
+                                txt["col_sl"]: stop_loss,
+                                txt["col_rsi"]: round(rsi, 1),
+                                txt["col_vol"]: f"{round(vol_ratio, 1)}x",
+                                txt["col_qty"]: qty,
+                                txt["col_cap"]: trade_capital,
                                 "_score": score
                             })
                     except Exception:
@@ -429,16 +508,15 @@ with tab_screener:
 
     if "adv_results" in st.session_state and st.session_state["adv_results"]:
         results = st.session_state["adv_results"]
-        st.markdown(f"#### 🎯 चुने गए स्टॉक्स ({len(results)})")
+        st.markdown(f"#### {txt['filtered_title']} ({len(results)})")
         
-        # मॉडर्न प्रोग्रेस बार टेबल
         st.dataframe(
             pd.DataFrame(results),
             use_container_width=True,
             hide_index=True,
             column_config={
-                "Setup Score": st.column_config.ProgressColumn("Confidence Score", format="%d%%", min_value=0, max_value=100),
-                "CMP (₹)": st.column_config.NumberColumn(format="₹%.2f"),
-                "Capital Required": st.column_config.NumberColumn(format="₹%d")
+                txt["col_score"]: st.column_config.ProgressColumn(txt["col_score"], format="%d%%", min_value=0, max_value=100),
+                txt["col_cmp"]: st.column_config.NumberColumn(format="₹%.2f"),
+                txt["col_cap"]: st.column_config.NumberColumn(format="₹%d")
             }
         )
