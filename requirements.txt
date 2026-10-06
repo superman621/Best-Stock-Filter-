@@ -7,3 +7,4 @@ logzero
 requests
 websocket-client
 supabase
+pip install feedparser
