@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pyotp
+import feedparser
 from datetime import datetime, timedelta
 from SmartApi import SmartConnect
 from supabase import create_client, Client
@@ -28,6 +29,7 @@ if "lang" not in st.session_state:
 # --- Translations Dictionary ---
 T = {
     "English": {
+        "news_badge": "🔴 LIVE NEWS",
         "terminal_title": "PRO TERMINAL",
         "live_feed": "Live Data Feed Active",
         "member": "Authenticated Member",
@@ -78,6 +80,7 @@ T = {
         "price_chart": "PRICE"
     },
     "Hindi": {
+        "news_badge": "🔴 ताज़ा खबरें",
         "terminal_title": "प्रो टर्मिनल",
         "live_feed": "लाइव मार्केट फीड सक्रिय",
         "member": "सक्रिय सदस्य",
@@ -131,6 +134,23 @@ T = {
 
 txt = T[st.session_state["lang"]]
 
+# --- Cache News Fetch (Updates every 2.5 minutes) ---
+@st.cache_data(ttl=150)
+def fetch_moneycontrol_news():
+    try:
+        url = "https://www.moneycontrol.com/rss/latestnews.xml"
+        feed = feedparser.parse(url)
+        news_items = []
+        for entry in feed.entries[:12]:
+            clean_title = entry.title.replace('"', '&quot;').replace("'", "&#39;")
+            news_items.append({
+                "title": clean_title,
+                "link": entry.link
+            })
+        return news_items
+    except Exception:
+        return []
+
 @st.cache_resource
 def init_supabase() -> Client:
     raw_url = st.secrets["SUPABASE_URL"].strip()
@@ -176,7 +196,6 @@ if st.session_state["user"] is None:
     </style>
     """, unsafe_allow_html=True)
 
-    # Top-right Language Selector on Login Screen
     _, col_lang = st.columns([4, 1])
     with col_lang:
         chosen_lang = st.selectbox("🌐 Language", ["English", "Hindi"], index=0 if st.session_state["lang"] == "English" else 1)
@@ -245,11 +264,73 @@ if st.session_state["user"] is None:
                     st.rerun()
     st.stop()
 
-# ================= DASHBOARD UI THEME =================
+# ================= DASHBOARD UI & TICKER STYLING =================
 st.markdown("""
 <style>
     .stApp { background-color: #0b0f17 !important; color: #f1f5f9 !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; }
     section[data-testid="stSidebar"] { background: #080c14 !important; border-right: 1px solid rgba(255, 255, 255, 0.06) !important; }
+    
+    /* Live Stock Ticker Bar on Top */
+    .news-ticker-container {
+        display: flex;
+        align-items: center;
+        background: #0f172a;
+        border: 1px solid rgba(56, 189, 248, 0.25);
+        border-radius: 8px;
+        overflow: hidden;
+        height: 42px;
+        margin-bottom: 16px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+    }
+    .news-badge {
+        background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 0.72rem;
+        letter-spacing: 0.05em;
+        padding: 0 16px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+        z-index: 5;
+        box-shadow: 3px 0 10px rgba(0, 0, 0, 0.5);
+    }
+    .ticker-scroll-wrap {
+        overflow: hidden;
+        white-space: nowrap;
+        width: 100%;
+    }
+    .ticker-track {
+        display: inline-block;
+        padding-left: 100%;
+        animation: marquee 35s linear infinite;
+    }
+    .ticker-track:hover {
+        animation-play-state: paused;
+    }
+    .ticker-item {
+        display: inline-block;
+        color: #cbd5e1;
+        font-size: 0.85rem;
+        margin-right: 40px;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .ticker-item:hover {
+        color: #38bdf8 !important;
+        text-decoration: underline !important;
+    }
+    .ticker-bullet {
+        color: #f59e0b;
+        margin-right: 8px;
+    }
+    @keyframes marquee {
+        0% { transform: translate3d(0, 0, 0); }
+        100% { transform: translate3d(-100%, 0, 0); }
+    }
+
+    /* Cards & Components */
     .metric-card {
         background: rgba(18, 24, 38, 0.75); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
         padding: 16px 20px; backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.25);
@@ -265,6 +346,24 @@ st.markdown("""
     div[data-testid="stDataFrame"] { border: 1px solid rgba(255, 255, 255, 0.08) !important; border-radius: 10px !important; }
 </style>
 """, unsafe_allow_html=True)
+
+# ================= TOP MONEYCONTROL LIVE NEWS TICKER =================
+news_feed = fetch_moneycontrol_news()
+if news_feed:
+    ticker_html_items = "".join([
+        f'<a href="{item["link"]}" target="_blank" class="ticker-item"><span class="ticker-bullet">⚡</span>{item["title"]}</a>'
+        for item in news_feed
+    ])
+    st.markdown(f"""
+    <div class="news-ticker-container">
+        <div class="news-badge">{txt['news_badge']}</div>
+        <div class="ticker-scroll-wrap">
+            <div class="ticker-track">
+                {ticker_html_items}
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 MASTER_STOCKS = {
     "RELIANCE": "2885", "TCS": "11536", "HDFCBANK": "1333", "INFY": "1594",
@@ -351,7 +450,7 @@ def render_chart(df, symbol, target_val, sl_val):
     fig.add_hrect(y0=30, y1=70, fillcolor="#38bdf8", opacity=0.05, line_width=0, row=3, col=1)
     fig.add_hline(y=70, line_dash="dot", line_color="#ef4444", row=3, col=1)
     fig.add_hline(y=30, line_dash="dot", line_color="#10b981", row=3, col=1)
-
+    
     fig.update_layout(
         paper_bgcolor='#0b0f17', plot_bgcolor='#0e1422',
         xaxis_rangeslider_visible=False, height=650, margin=dict(l=10, r=10, t=10, b=10),
@@ -385,7 +484,6 @@ with col_status:
 # --- SIDEBAR (Language Toggle & Risk Config) ---
 st.sidebar.markdown(f"**{txt['member']}:** `{display_user}`")
 
-# Main Language Selector
 selected_lang = st.sidebar.selectbox("🌐 Language / भाषा", ["English", "Hindi"], index=0 if st.session_state["lang"] == "English" else 1)
 if selected_lang != st.session_state["lang"]:
     st.session_state["lang"] = selected_lang
