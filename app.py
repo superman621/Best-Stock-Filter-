@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from SmartApi import SmartConnect
 from supabase import create_client, Client
 
-# --- Page Setup ---
+# --- पेज सेटअप ---
 st.set_page_config(
     page_title="Sandeep Kumar | Pro Terminal 2.0",
     page_icon="⚡",
@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- State Initialization ---
+# --- स्टेट इनिशियलाइज़ेशन ---
 if "user" not in st.session_state:
     st.session_state["user"] = None
 if "user_name" not in st.session_state:
@@ -25,8 +25,10 @@ if "auth_mode" not in st.session_state:
     st.session_state["auth_mode"] = "login"
 if "lang" not in st.session_state:
     st.session_state["lang"] = "English"
+if "theme_mode" not in st.session_state:
+    st.session_state["theme_mode"] = "Dark"
 
-# --- Translations Dictionary ---
+# --- भाषा डिक्शनरी ---
 T = {
     "English": {
         "news_badge": "🔴 LIVE NEWS",
@@ -77,7 +79,8 @@ T = {
         "already_acc": "Already have an account? Login",
         "vol_chart": "VOLUME PROFILE",
         "rsi_chart": "RSI (14) MOMENTUM",
-        "price_chart": "PRICE"
+        "price_chart": "PRICE",
+        "theme_label": "🎨 Theme Mode"
     },
     "Hindi": {
         "news_badge": "🔴 ताज़ा खबरें",
@@ -128,20 +131,20 @@ T = {
         "already_acc": "पहले से अकाउंट है? लॉगिन करें",
         "vol_chart": "वॉल्यूम ट्रेंड",
         "rsi_chart": "RSI (14) मोमेंटम",
-        "price_chart": "प्राइस"
+        "price_chart": "प्राइस",
+        "theme_label": "🎨 थीम मोड"
     }
 }
 
 txt = T[st.session_state["lang"]]
-
-# --- Cache News Fetch (Updates every 2.5 minutes) ---
-@st.cache_data(ttl=150)
+# --- Moneycontrol न्यूज़ फेच ---
+@st.cache_data(ttl=120)
 def fetch_moneycontrol_news():
     try:
         url = "https://www.moneycontrol.com/rss/latestnews.xml"
         feed = feedparser.parse(url)
         news_items = []
-        for entry in feed.entries[:12]:
+        for entry in feed.entries[:15]:
             clean_title = entry.title.replace('"', '&quot;').replace("'", "&#39;")
             news_items.append({
                 "title": clean_title,
@@ -160,7 +163,7 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# ================= LOGIN SCREEN =================
+# ================= लॉगिन स्क्रीन =================
 if st.session_state["user"] is None:
     st.markdown("""
     <style>
@@ -170,7 +173,7 @@ if st.session_state["user"] is None:
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
         }
         div[data-testid="stForm"] {
-            background: rgba(17, 24, 39, 0.7) !important;
+            background: rgba(17, 24, 39, 0.75) !important;
             backdrop-filter: blur(20px) !important;
             border: 1px solid rgba(255, 255, 255, 0.08) !important;
             border-radius: 20px !important;
@@ -263,89 +266,192 @@ if st.session_state["user"] is None:
                     st.session_state["auth_mode"] = "login"
                     st.rerun()
     st.stop()
+    # ================= डार्क / लाइट (MONEYCONTROL STYLE) थीम CSS =================
+is_light = (st.session_state["theme_mode"] == "Light")
 
-# ================= DASHBOARD UI & TICKER STYLING =================
-st.markdown("""
+if is_light:
+    # Moneycontrol Clean Light Style
+    theme_css = """
+    <style>
+        .stApp {
+            background-color: #f7f9fa !important;
+            color: #111827 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+        }
+        section[data-testid="stSidebar"] {
+            background-color: #ffffff !important;
+            border-right: 1px solid #e2e8f0 !important;
+        }
+        section[data-testid="stSidebar"] * {
+            color: #1e293b !important;
+        }
+        /* Moneycontrol News Ticker Light */
+        .news-ticker-container {
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-left: 4px solid #0066cc;
+            border-radius: 6px;
+            overflow: hidden;
+            height: 42px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+        .news-badge {
+            background: #dbeafe;
+            color: #0066cc;
+            font-weight: 800;
+            font-size: 0.75rem;
+            padding: 0 14px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            border-right: 1px solid #cbd5e1;
+        }
+        .ticker-item {
+            color: #1e293b !important;
+            font-size: 0.88rem;
+            margin-right: 35px;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .ticker-item:hover {
+            color: #0066cc !important;
+            text-decoration: underline !important;
+        }
+        .ticker-bullet {
+            color: #0066cc;
+            margin-right: 8px;
+        }
+        /* Metric Card Moneycontrol Light */
+        .metric-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-top: 3px solid #0066cc;
+            border-radius: 8px;
+            padding: 16px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+        }
+        .metric-card .label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #64748b; }
+        .metric-card .val { font-size: 1.45rem; font-weight: 800; color: #0f172a; font-family: -apple-system, sans-serif; }
+        .metric-card .sub { font-size: 0.75rem; color: #0066cc; margin-top: 2px; font-weight: 600; }
+        
+        .stButton > button {
+            background: #0066cc !important;
+            color: #ffffff !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-weight: 700 !important;
+            box-shadow: 0 2px 6px rgba(0, 102, 204, 0.2) !important;
+        }
+        .stButton > button:hover {
+            background: #0052a3 !important;
+        }
+        div[data-baseweb="select"] {
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+        }
+        div[data-testid="stDataFrame"] {
+            background: #ffffff;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px !important;
+        }
+    </style>
+    """
+else:
+    # Terminal Pro Dark Style
+    theme_css = """
+    <style>
+        .stApp {
+            background-color: #0b0f17 !important;
+            color: #f1f5f9 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
+        section[data-testid="stSidebar"] {
+            background: #080c14 !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+        }
+        /* Dark News Ticker */
+        .news-ticker-container {
+            display: flex;
+            align-items: center;
+            background: #0f172a;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: 8px;
+            overflow: hidden;
+            height: 42px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+        }
+        .news-badge {
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.72rem;
+            padding: 0 16px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+        .ticker-item {
+            color: #cbd5e1 !important;
+            font-size: 0.85rem;
+            margin-right: 40px;
+            text-decoration: none;
+        }
+        .ticker-item:hover {
+            color: #38bdf8 !important;
+            text-decoration: underline !important;
+        }
+        .ticker-bullet {
+            color: #f59e0b;
+            margin-right: 8px;
+        }
+        /* Dark Metric Card */
+        .metric-card {
+            background: rgba(18, 24, 38, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        }
+        .metric-card .label { font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; }
+        .metric-card .val { font-size: 1.45rem; font-weight: 700; color: #f8fafc; font-family: 'JetBrains Mono', monospace; }
+        .metric-card .sub { font-size: 0.75rem; color: #38bdf8; margin-top: 2px; }
+
+        .stButton > button {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            border-radius: 10px !important;
+            font-weight: 600 !important;
+        }
+        .stButton > button:hover {
+            border-color: #38bdf8 !important;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3) !important;
+        }
+        div[data-testid="stDataFrame"] {
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 10px !important;
+        }
+    </style>
+    """
+
+# Marquee Animation
+common_ticker_css = """
 <style>
-    .stApp { background-color: #0b0f17 !important; color: #f1f5f9 !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; }
-    section[data-testid="stSidebar"] { background: #080c14 !important; border-right: 1px solid rgba(255, 255, 255, 0.06) !important; }
-    
-    /* Live Stock Ticker Bar on Top */
-    .news-ticker-container {
-        display: flex;
-        align-items: center;
-        background: #0f172a;
-        border: 1px solid rgba(56, 189, 248, 0.25);
-        border-radius: 8px;
-        overflow: hidden;
-        height: 42px;
-        margin-bottom: 16px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
-    }
-    .news-badge {
-        background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-        color: #ffffff;
-        font-weight: 800;
-        font-size: 0.72rem;
-        letter-spacing: 0.05em;
-        padding: 0 16px;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        white-space: nowrap;
-        z-index: 5;
-        box-shadow: 3px 0 10px rgba(0, 0, 0, 0.5);
-    }
-    .ticker-scroll-wrap {
-        overflow: hidden;
-        white-space: nowrap;
-        width: 100%;
-    }
-    .ticker-track {
-        display: inline-block;
-        padding-left: 100%;
-        animation: marquee 35s linear infinite;
-    }
-    .ticker-track:hover {
-        animation-play-state: paused;
-    }
-    .ticker-item {
-        display: inline-block;
-        color: #cbd5e1;
-        font-size: 0.85rem;
-        margin-right: 40px;
-        text-decoration: none;
-        transition: color 0.2s;
-    }
-    .ticker-item:hover {
-        color: #38bdf8 !important;
-        text-decoration: underline !important;
-    }
-    .ticker-bullet {
-        color: #f59e0b;
-        margin-right: 8px;
-    }
-    @keyframes marquee {
-        0% { transform: translate3d(0, 0, 0); }
-        100% { transform: translate3d(-100%, 0, 0); }
-    }
-
-    /* Cards & Components */
-    .metric-card {
-        background: rgba(18, 24, 38, 0.75); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
-        padding: 16px 20px; backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-    }
-    .metric-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
-    .metric-card .val { font-size: 1.45rem; font-weight: 700; color: #f8fafc; font-family: 'JetBrains Mono', monospace; }
-    .metric-card .sub { font-size: 0.75rem; color: #38bdf8; margin-top: 2px; }
-    .stButton > button {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important; color: #ffffff !important;
-        border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 10px !important; font-weight: 600 !important;
-    }
-    .stButton > button:hover { border-color: #38bdf8 !important; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3) !important; }
-    div[data-testid="stDataFrame"] { border: 1px solid rgba(255, 255, 255, 0.08) !important; border-radius: 10px !important; }
+    .ticker-scroll-wrap { overflow: hidden; white-space: nowrap; width: 100%; }
+    .ticker-track { display: inline-block; padding-left: 100%; animation: marquee 35s linear infinite; }
+    .ticker-track:hover { animation-play-state: paused; }
+    @keyframes marquee { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
 </style>
-""", unsafe_allow_html=True)
+"""
+
+st.markdown(theme_css + common_ticker_css, unsafe_allow_html=True)
 
 # ================= TOP MONEYCONTROL LIVE NEWS TICKER =================
 news_feed = fetch_moneycontrol_news()
@@ -428,15 +534,17 @@ def render_chart(df, symbol, target_val, sl_val):
         rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.62, 0.18, 0.20],
         subplot_titles=["", txt["vol_chart"], txt["rsi_chart"]]
     )
+    
+    # कैंडल्स
     fig.add_trace(go.Candlestick(
         x=df['Time'], open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'],
         name=txt["price_chart"], increasing_line_color='#10b981', decreasing_line_color='#ef4444'
     ), row=1, col=1)
     
     fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA20'], line=dict(color='#f59e0b', width=1.5), name="EMA 20"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA50'], line=dict(color='#38bdf8', width=1.5), name="EMA 50"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Upper'], line=dict(color='rgba(148, 163, 184, 0.4)', width=1, dash='dot'), name="Upper Band"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Lower'], line=dict(color='rgba(148, 163, 184, 0.4)', width=1, dash='dot'), name="Lower Band"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA50'], line=dict(color='#0284c7' if is_light else '#38bdf8', width=1.5), name="EMA 50"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Upper'], line=dict(color='#94a3b8', width=1, dash='dot'), name="Upper Band"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Lower'], line=dict(color='#94a3b8', width=1, dash='dot'), name="Lower Band"), row=1, col=1)
     
     if target_val and sl_val:
         fig.add_hline(y=target_val, line_dash="dash", line_color="#10b981", annotation_text=f" {txt['target']} ₹{target_val}", row=1, col=1)
@@ -444,46 +552,59 @@ def render_chart(df, symbol, target_val, sl_val):
         
     v_colors = ['#10b981' if c >= o else '#ef4444' for c, o in zip(df['Close'], df['Open'])]
     fig.add_trace(go.Bar(x=df['Time'], y=df['Volume'], marker_color=v_colors, opacity=0.7, name="Volume"), row=2, col=1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['Vol_SMA20'], line=dict(color='#fbbf24', width=1), name="Vol MA"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['Vol_SMA20'], line=dict(color='#d97706' if is_light else '#fbbf24', width=1), name="Vol MA"), row=2, col=1)
     
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['RSI'], line=dict(color='#a855f7', width=1.7), name="RSI"), row=3, col=1)
-    fig.add_hrect(y0=30, y1=70, fillcolor="#38bdf8", opacity=0.05, line_width=0, row=3, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['RSI'], line=dict(color='#7c3aed' if is_light else '#a855f7', width=1.7), name="RSI"), row=3, col=1)
+    fig.add_hrect(y0=30, y1=70, fillcolor="#0284c7" if is_light else "#38bdf8", opacity=0.08, line_width=0, row=3, col=1)
     fig.add_hline(y=70, line_dash="dot", line_color="#ef4444", row=3, col=1)
     fig.add_hline(y=30, line_dash="dot", line_color="#10b981", row=3, col=1)
-    
+
+    # थीम के हिसाब से बैकग्राउंड
+    bg_paper = "#ffffff" if is_light else "#0b0f17"
+    bg_plot = "#f8fafc" if is_light else "#0e1422"
+    grid_c = "#e2e8f0" if is_light else "#1e293b"
+    font_c = "#334155" if is_light else "#94a3b8"
+
     fig.update_layout(
-        paper_bgcolor='#0b0f17', plot_bgcolor='#0e1422',
+        paper_bgcolor=bg_paper, plot_bgcolor=bg_plot,
         xaxis_rangeslider_visible=False, height=650, margin=dict(l=10, r=10, t=10, b=10),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="#94a3b8", size=10)),
-        font=dict(family="JetBrains Mono, monospace", color="#94a3b8")
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color=font_c, size=10)),
+        font=dict(family="Arial, sans-serif" if is_light else "JetBrains Mono, monospace", color=font_c)
     )
-    fig.update_xaxes(gridcolor='#1e293b')
-    fig.update_yaxes(gridcolor='#1e293b')
+    fig.update_xaxes(gridcolor=grid_c)
+    fig.update_yaxes(gridcolor=grid_c)
     st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': True, 'displayModeBar': False})
 
-# --- NAVIGATION HEADER ---
+# --- हेडर ---
 col_head, col_status = st.columns([3, 1])
 display_user = st.session_state.get('user_name', 'Trader')
 with col_head:
     st.markdown(f"""
     <div style='display:flex; align-items:center; gap:12px;'>
-        <h2 style='margin:0; font-size:1.8rem; font-weight:800;'>⚡ SANDEEP KUMAR <span style='color:#38bdf8; font-size:0.9rem; border:1px solid #0284c7; padding:2px 8px; border-radius:6px;'>{txt['terminal_title']}</span></h2>
+        <h2 style='margin:0; font-size:1.8rem; font-weight:800;'>⚡ SANDEEP KUMAR <span style='color:{"#0066cc" if is_light else "#38bdf8"}; font-size:0.9rem; border:1px solid {"#0066cc" if is_light else "#0284c7"}; padding:2px 8px; border-radius:6px;'>{txt['terminal_title']}</span></h2>
     </div>
-    <p style='color:#64748b; margin:2px 0 0 0; font-size:0.85rem;'>{txt['live_feed']} • {txt['member']}: <span style='color:#94a3b8;'>{display_user}</span></p>
+    <p style='color:{"#64748b" if is_light else "#94a3b8"}; margin:2px 0 0 0; font-size:0.85rem;'>{txt['live_feed']} • {txt['member']}: <span style='font-weight:600;'>{display_user}</span></p>
     """, unsafe_allow_html=True)
 
 with col_status:
     st.markdown(f"""
     <div style='text-align:right; margin-top:8px;'>
-        <span style='background:rgba(16, 185, 129, 0.15); color:#10b981; border:1px solid rgba(16, 185, 129, 0.3); padding:6px 14px; border-radius:20px; font-size:0.75rem; font-weight:600;'>
+        <span style='background:rgba(16, 185, 129, 0.15); color:#10b981; border:1px solid rgba(16, 185, 129, 0.3); padding:6px 14px; border-radius:20px; font-size:0.75rem; font-weight:700;'>
             {txt['live_badge']}
         </span>
     </div>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR (Language Toggle & Risk Config) ---
+# --- साइडबार (थीम, भाषा, रिस्क सेटिंग्स) ---
 st.sidebar.markdown(f"**{txt['member']}:** `{display_user}`")
 
+# थीम टॉगल (Light vs Dark)
+selected_theme = st.sidebar.selectbox(txt["theme_label"], ["Light", "Dark"], index=0 if is_light else 1)
+if selected_theme != st.session_state["theme_mode"]:
+    st.session_state["theme_mode"] = selected_theme
+    st.rerun()
+
+# भाषा टॉगल
 selected_lang = st.sidebar.selectbox("🌐 Language / भाषा", ["English", "Hindi"], index=0 if st.session_state["lang"] == "English" else 1)
 if selected_lang != st.session_state["lang"]:
     st.session_state["lang"] = selected_lang
@@ -504,7 +625,7 @@ min_score = st.sidebar.slider(txt["min_score"], min_value=40, max_value=85, valu
 
 st.write("")
 
-# --- TABS ---
+# --- दो मुख्य टैब्स ---
 tab_screener, tab_search = st.tabs([txt["tab_screener"], txt["tab_search"]])
 
 with tab_search:
@@ -531,7 +652,7 @@ with tab_search:
                     k1.markdown(f"<div class='metric-card'><div class='label'>{txt['cmp']}</div><div class='val'>₹{cmp:,.2f}</div><div class='sub'>Live NSE Price</div></div>", unsafe_allow_html=True)
                     k2.markdown(f"<div class='metric-card'><div class='label'>{txt['target']} (+{target_pct_choice}%)</div><div class='val' style='color:#10b981;'>₹{tgt:,.2f}</div><div class='sub'>Upside Target</div></div>", unsafe_allow_html=True)
                     k3.markdown(f"<div class='metric-card'><div class='label'>{txt['sl']}</div><div class='val' style='color:#ef4444;'>₹{sl:,.2f}</div><div class='sub'>Trailing Protection</div></div>", unsafe_allow_html=True)
-                    k4.markdown(f"<div class='metric-card'><div class='label'>{txt['rsi']}</div><div class='val' style='color:#a855f7;'>{rsi}</div><div class='sub'>{'Bullish' if 50 <= rsi <= 70 else 'Neutral/Extreme'}</div></div>", unsafe_allow_html=True)
+                    k4.markdown(f"<div class='metric-card'><div class='label'>{txt['rsi']}</div><div class='val' style='color:{'#7c3aed' if is_light else '#a855f7'};'>{rsi}</div><div class='sub'>{'Bullish' if 50 <= rsi <= 70 else 'Neutral/Extreme'}</div></div>", unsafe_allow_html=True)
                     
                     st.write("")
                     render_chart(df_search, searched_stock, tgt, sl)
