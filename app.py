@@ -399,4 +399,46 @@ with tab_screener:
                             risk_amt = account_capital * (risk_per_trade_pct / 100.0)
                             stop_loss = round(cmp - (1.5 * atr), 2)
                             risk_per_share = cmp - stop_loss
-             
+                            qty = int(risk_amt // risk_per_share) if risk_per_share > 0 else 0
+                            trade_capital = round(qty * cmp, 2)
+                            target_price = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
+                            
+                            candles_store[sym] = df
+                            all_results.append({
+                                "Symbol": sym,
+                                "Setup Score": score,
+                                "CMP (₹)": round(cmp, 2),
+                                f"Target (+{target_pct_choice}%)": target_price,
+                                "Stop Loss": stop_loss,
+                                "RSI": round(rsi, 1),
+                                "Volume Surge": f"{round(vol_ratio, 1)}x",
+                                "Recommended Qty": qty,
+                                "Capital Required": trade_capital,
+                                "_score": score
+                            })
+                    except Exception:
+                        continue
+
+                progress_bar.empty()
+                if all_results:
+                    all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
+                    for item in all_results:
+                        del item['_score']
+                    st.session_state["adv_results"] = all_results
+                    st.session_state["adv_candles"] = candles_store
+
+    if "adv_results" in st.session_state and st.session_state["adv_results"]:
+        results = st.session_state["adv_results"]
+        st.markdown(f"#### 🎯 चुने गए स्टॉक्स ({len(results)})")
+        
+        # मॉडर्न प्रोग्रेस बार टेबल
+        st.dataframe(
+            pd.DataFrame(results),
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Setup Score": st.column_config.ProgressColumn("Confidence Score", format="%d%%", min_value=0, max_value=100),
+                "CMP (₹)": st.column_config.NumberColumn(format="₹%.2f"),
+                "Capital Required": st.column_config.NumberColumn(format="₹%d")
+            }
+        )
