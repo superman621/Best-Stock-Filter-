@@ -7,15 +7,15 @@ from datetime import datetime, timedelta
 from SmartApi import SmartConnect
 from supabase import create_client, Client
 
-# Page Setup - Phone me sidebar shuru me band rahegi
+# --- पेज सेटअप ---
 st.set_page_config(
-    page_title="Sandeep Kumar | Pro Terminal",
+    page_title="Sandeep Kumar | Pro Terminal 2.0",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# State initialization
+# --- स्टेट इनिशियलाइज़ेशन ---
 if "user" not in st.session_state:
     st.session_state["user"] = None
 if "user_name" not in st.session_state:
@@ -23,7 +23,6 @@ if "user_name" not in st.session_state:
 if "auth_mode" not in st.session_state:
     st.session_state["auth_mode"] = "login"
 
-# Supabase Auth Client Init (Auto-Fix for trailing path / invalid URL)
 @st.cache_resource
 def init_supabase() -> Client:
     raw_url = st.secrets["SUPABASE_URL"].strip()
@@ -33,285 +32,159 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# ================= LOGIN SCREEN THEME =================
+# ================= आधुनिक लॉगिन स्क्रीन =================
 if st.session_state["user"] is None:
     st.markdown("""
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        #MainMenu, header, footer, [data-testid="stToolbar"], [data-testid="stHeader"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
+        #MainMenu, header, footer, [data-testid="stToolbar"], [data-testid="stHeader"] { display: none !important; }
         .stApp {
-            background: radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.95) 0%, rgba(144, 202, 249, 0.45) 12%, rgba(25, 118, 210, 0.6) 28%, rgba(13, 37, 72, 0.95) 65%, #07111e 100%),
-                        linear-gradient(180deg, #1e88e5 0%, #0d2847 45%, #050d1a 100%) !important;
-            min-height: 100vh;
+            background: radial-gradient(circle at 50% 20%, rgba(14, 165, 233, 0.15) 0%, rgba(8, 10, 15, 0.95) 70%), #07090e !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
         }
-
-        .stApp::before {
-            content: "";
-            position: fixed;
-            top: 35px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 105px;
-            height: 105px;
-            background: radial-gradient(circle, #ffffff 40%, rgba(255, 255, 255, 0.8) 65%, rgba(255, 255, 255, 0) 100%);
-            border-radius: 50%;
-            box-shadow: 0 0 50px rgba(255, 255, 255, 0.85);
-            pointer-events: none;
-            z-index: 0;
-        }
-
         div[data-testid="stForm"] {
-            position: relative;
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.12) !important;
-            backdrop-filter: blur(25px) !important;
-            -webkit-backdrop-filter: blur(25px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.28) !important;
-            border-radius: 28px !important;
-            padding: 38px 30px 25px 30px !important;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
-            margin-top: 40px;
+            background: rgba(17, 24, 39, 0.7) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 20px !important;
+            padding: 35px !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important;
         }
-
         .stTextInput div[data-baseweb="input"] {
-            background-color: rgba(255, 255, 255, 0.45) !important;
-            border: 1.5px solid rgba(255, 255, 255, 0.8) !important;
-            border-radius: 35px !important;
-            height: 50px;
-            padding-left: 10px;
-            transition: all 0.3s ease !important;
+            background-color: rgba(255, 255, 255, 0.04) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            border-radius: 12px !important;
+            height: 48px;
         }
-
-        .stTextInput div[data-baseweb="input"]:focus-within {
-            background-color: #ffffff !important;
-            border-color: #00b0ff !important;
-            box-shadow: 0 0 16px rgba(0, 176, 255, 0.7) !important;
-        }
-
-        .stTextInput input {
-            color: #0f172a !important;
-            -webkit-text-fill-color: #0f172a !important;
-            font-weight: 600 !important;
-            font-size: 1rem !important;
-        }
-
-        .stTextInput input::placeholder {
-            color: #475569 !important;
-            -webkit-text-fill-color: #475569 !important;
-            font-weight: 500 !important;
-        }
-
-        div[data-testid="stForm"] div[data-testid="stFormSubmitButton"] {
-            display: flex !important;
-            justify-content: center !important;
-            width: 100% !important;
-        }
-
-        div[data-testid="stForm"] .stButton > button {
-            background: linear-gradient(135deg, #1e88e5 0%, #00b0ff 100%) !important;
+        .stTextInput input { color: #f8fafc !important; }
+        div[data-testid="stFormSubmitButton"] > button {
+            background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%) !important;
             color: #ffffff !important;
-            -webkit-text-fill-color: #ffffff !important;
             border: none !important;
+            border-radius: 12px !important;
             height: 48px !important;
-            font-weight: 700 !important;
-            font-size: 1.05rem !important;
-            border-radius: 35px !important;
-            width: 100% !important;
-            box-shadow: 0 6px 20px rgba(0, 176, 255, 0.45) !important;
-            transition: all 0.3s ease !important;
-        }
-
-        div[data-testid="stForm"] .stButton > button:hover {
-            transform: translateY(-2px) !important;
-            box-shadow: 0 10px 25px rgba(0, 176, 255, 0.7) !important;
-        }
-
-        div[data-testid="stVerticalBlock"] > div.stButton > button {
-            background: transparent !important;
-            border: none !important;
-            color: rgba(255, 255, 255, 0.9) !important;
-            box-shadow: none !important;
-            font-size: 0.9rem !important;
-            margin-top: 4px;
-        }
-        div[data-testid="stVerticalBlock"] > div.stButton > button:hover {
-            color: #ffffff !important;
-            text-decoration: underline !important;
-            background: transparent !important;
+            font-weight: 600 !important;
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4) !important;
         }
     </style>
     """, unsafe_allow_html=True)
 
-    _, col_auth, _ = st.columns([1, 1.15, 1])
+    _, col_auth, _ = st.columns([1, 1.1, 1])
     with col_auth:
+        st.write("")
+        st.write("")
         mode = st.session_state["auth_mode"]
         
-        # ---------------- FORGOT PASSWORD VIEW ----------------
+        # पासवर्ड रीसेट
         if mode == "forgot":
-            with st.form("forgot_password_form"):
-                st.markdown("""
-                <div style='text-align: center; margin-bottom: 20px;'>
-                    <h1 style='font-size: 2.1rem; font-weight: 800; color: #ffffff; margin: 0;'>Reset Access</h1>
-                    <p style='color: rgba(255,255,255,0.85); font-size: 0.85rem; margin-top: 6px;'>Apna registered email enter karein password reset link paane ke liye.</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                reset_email = st.text_input("Reset Email", placeholder="✉️  email@domain.com", label_visibility="collapsed")
-                st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-                
-                submit_reset = st.form_submit_button("Send Reset Link", use_container_width=True)
-                
-                if submit_reset:
-                    if not reset_email:
-                        st.error("⚠️ Kripya email enter karein.")
-                    else:
-                        try:
-                            clean_reset = reset_email.replace("✉️", "").strip()
-                            supabase.auth.reset_password_for_email(
-                                clean_reset, 
-                                {"redirect_to": "https://beststockfilter.streamlit.app"}
-                            )
-                            st.success("📩 Password reset link aapke email par bhej diya gaya hai! Inbox check karein.")
-                        except Exception as e:
-                            st.error(f"Reset Failed: {str(e)}")
-            
-            if st.button("⬅️ Back to Login", key="back_to_login", use_container_width=True):
+            with st.form("forgot_form"):
+                st.markdown("<h2 style='text-align:center; color:#fff;'>पासवर्ड रीसेट</h2>", unsafe_allow_html=True)
+                reset_email = st.text_input("ईमेल", placeholder="email@domain.com")
+                if st.form_submit_button("रीसेट लिंक भेजें", use_container_width=True):
+                    try:
+                        supabase.auth.reset_password_for_email(reset_email.strip())
+                        st.success("पासवर्ड रीसेट लिंक आपके ईमेल पर भेज दिया गया है!")
+                    except Exception as e:
+                        st.error(str(e))
+            if st.button("लॉगिन पर वापस जाएं", use_container_width=True):
                 st.session_state["auth_mode"] = "login"
                 st.rerun()
-
-        # ---------------- LOGIN & REGISTER VIEW ----------------
+        
+        # लॉगिन और रजिस्ट्रेशन
         else:
             is_login = mode == "login"
-            card_title = "Login" if is_login else "Register"
-            
             with st.form("auth_form"):
-                st.markdown(f"""
-                <div style='text-align: center; margin-bottom: 24px;'>
-                    <h1 style='font-size: 2.3rem; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: 0.5px;'>{card_title}</h1>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<h2 style='text-align:center; color:#fff;'>{'लॉगिन करें' if is_login else 'नया अकाउंट बनाएं'}</h2>", unsafe_allow_html=True)
+                full_name = None if is_login else st.text_input("पूरा नाम", placeholder="राहुल शर्मा")
+                email = st.text_input("ईमेल", placeholder="email@domain.com")
+                password = st.text_input("पासवर्ड", type="password", placeholder="••••••••")
                 
-                full_name = None
-                if not is_login:
-                    full_name = st.text_input("Name", placeholder="👤  Full Name (Jaise: Rahul Sharma)", label_visibility="collapsed")
-                    st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
-                
-                email = st.text_input("Email", placeholder="✉️  email@domain.com", label_visibility="collapsed")
-                st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
-                password = st.text_input("Password", type="password", placeholder="🔒  ••••••••••••", label_visibility="collapsed")
-                
-                st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
-                submit = st.form_submit_button(card_title, use_container_width=True)
-                
-                if submit:
+                if st.form_submit_button("आगे बढ़ें", use_container_width=True):
                     if not email or not password:
-                        st.error("⚠️ Email aur Password dono fill karein.")
+                        st.error("कृपया सभी डिटेल्स भरें।")
                     elif not is_login and not full_name:
-                        st.error("⚠️️ Kripya apna Naam fill karein.")
-                    elif len(password) < 6:
-                        st.error("⚠️ Password minimum 6 characters ka hona chahiye.")
+                        st.error("कृपया अपना नाम दर्ज करें।")
                     else:
-                        clean_email = email.replace("✉️", "").strip()
-                        if "@" not in clean_email:
-                            clean_email = f"{clean_email}@terminal.com"
-                        
+                        clean_email = f"{email}@terminal.com" if "@" not in email else email
                         if not is_login:
                             try:
-                                res = supabase.auth.sign_up({
-                                    "email": clean_email,
-                                    "password": password,
-                                    "options": {
-                                        "data": {"full_name": full_name.strip()}
-                                    }
-                                })
+                                res = supabase.auth.sign_up({"email": clean_email, "password": password, "options": {"data": {"full_name": full_name.strip()}}})
                                 if res.user:
-                                    st.success("✅ Account ban gaya! Ab Login karke access karein.")
+                                    st.success("अकाउंट बन गया! अब लॉगिन करें।")
                                     st.session_state["auth_mode"] = "login"
                             except Exception as e:
-                                st.error(f"Sign Up Failed: {str(e)}")
+                                st.error(str(e))
                         else:
                             try:
                                 res = supabase.auth.sign_in_with_password({"email": clean_email, "password": password})
                                 if res.user:
                                     st.session_state["user"] = res.user.email
-                                    meta_name = res.user.user_metadata.get("full_name") if res.user.user_metadata else None
-                                    st.session_state["user_name"] = meta_name if meta_name else res.user.email.split("@")[0].capitalize()
+                                    meta = res.user.user_metadata or {}
+                                    st.session_state["user_name"] = meta.get("full_name", res.user.email.split("@")[0].title())
                                     st.rerun()
                             except Exception:
-                                st.error("❌ Invalid Credentials. Dobara check karein.")
-
+                                st.error("गलत ईमेल या पासवर्ड। दोबारा जांचें।")
+            
             if is_login:
-                if st.button("Don't have an account? Register", key="switch_to_reg", use_container_width=True):
+                if st.button("नया अकाउंट बनाएं (Register)", use_container_width=True):
                     st.session_state["auth_mode"] = "register"
                     st.rerun()
-                if st.button("Forgot Password?", key="switch_to_forgot", use_container_width=True):
+                if st.button("पासवर्ड भूल गए?", use_container_width=True):
                     st.session_state["auth_mode"] = "forgot"
                     st.rerun()
             else:
-                if st.button("Already have an account? Login", key="switch_to_login", use_container_width=True):
+                if st.button("पहले से अकाउंट है? लॉगिन करें", use_container_width=True):
                     st.session_state["auth_mode"] = "login"
                     st.rerun()
-
     st.stop()
 
-# ================= POST-LOGIN TERMINAL THEME & APP =================
+# ================= डैशबोर्ड डार्क टर्मिनल स्टाइल =================
 st.markdown("""
 <style>
-    /* Global Background Fix */
-    .stApp { 
-        background: #080a0f !important; 
-        color: #f1f5f9 !important; 
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important; 
-    }
-    .stApp::before { display: none !important; }
-    
-    /* Text Color Fix - Sabhi text clear dikhenge */
-    h1, h2, h3, h4, h5, p, span, label, div {
+    /* डार्क टर्मिनल बेस */
+    .stApp {
+        background-color: #0b0f17 !important;
         color: #f1f5f9 !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     }
+    
+    /* साइडबार स्टाइल */
+    section[data-testid="stSidebar"] {
+        background: #080c14 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+    }
+    
+    /* मॉडर्न ग्लास कार्ड्स */
+    .metric-card {
+        background: rgba(18, 24, 38, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 16px 20px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    .metric-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
+    .metric-card .val { font-size: 1.45rem; font-weight: 700; color: #f8fafc; font-family: 'JetBrains Mono', monospace; }
+    .metric-card .sub { font-size: 0.75rem; color: #38bdf8; margin-top: 2px; }
 
-    section[data-testid="stSidebar"] { 
-        background-color: #0f131c !important; 
-        border-right: 1px solid #1e2638 !important; 
-    }
-
-    /* Selectbox dropdown fix */
-    div[data-baseweb="select"] {
-        background-color: #161c2b !important;
-        border: 1px solid #2d384e !important;
-        border-radius: 8px !important;
-    }
-    div[data-baseweb="select"] * {
-        color: #ffffff !important;
-    }
-
-    /* Screener Buttons */
+    /* बटन डिज़ाइन */
     .stButton > button {
-        background: linear-gradient(135deg, #0052cc 0%, #00c49f 100%) !important;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
-        border: none !important;
-        font-weight: 700 !important;
-        border-radius: 8px !important;
-        padding: 0.6rem 1.2rem !important;
-        box-shadow: 0 4px 15px rgba(0, 196, 159, 0.3) !important;
-    }
-
-    /* Metrics Cards */
-    div[data-testid="stMetric"] {
-        background-color: #111622 !important;
-        border: 1px solid #1e2638 !important;
-        padding: 12px 16px !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
         border-radius: 10px !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease-in-out !important;
     }
-    div[data-testid="stMetric"] label { color: #8b9bb4 !important; font-size: 0.8rem !important; }
-    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-        color: #00d2c4 !important;
-        font-family: monospace !important;
-        font-weight: 700 !important;
+    .stButton > button:hover {
+        border-color: #38bdf8 !important;
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.3) !important;
+    }
+    
+    /* डेटाफ्रेम डिज़ाइन */
+    div[data-testid="stDataFrame"] {
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 10px !important;
+        overflow: hidden;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -324,26 +197,15 @@ MASTER_STOCKS = {
     "POWERGRID": "14977", "TATASTEEL": "3499", "COALINDIA": "20374", "VEDL": "3063",
     "HINDALCO": "1363", "BEL": "383", "HAL": "2303", "DLF": "14732", "TRENT": "1964",
     "ADANIENT": "25", "ADANIPORTS": "15083", "ASIANPAINT": "236", "BAJAJFINSV": "16675",
-    "BPCL": "526", "BRITANNIA": "547", "CIPLA": "694", "DIVISLAB": "10940",
-    "DRREDDY": "881", "EICHERMOT": "910", "GRASIM": "1232", "HCLTECH": "7229",
-    "HEROMOTOCO": "1348", "HINDUNILVR": "1394", "INDUSINDBK": "5258", "JSWSTEEL": "11723",
-    "MARUTI": "10999", "NESTLEIND": "17963", "ONGC": "2475", "SBILIFE": "21808",
-    "TECHM": "13538", "ULTRACEMCO": "11532", "WIPRO": "3787", "ZOMATO": "5097",
-    "JIOFIN": "18143", "IRFC": "160", "RVNL": "13745", "BHEL": "438", "PNB": "10666"
+    "ZOMATO": "5097", "JIOFIN": "18143", "IRFC": "160", "RVNL": "13745", "BHEL": "438"
 }
 
 def get_angel_client():
     try:
-        api_key = st.secrets["ANGEL_API_KEY"]
-        client_code = st.secrets["ANGEL_CLIENT_CODE"]
-        pin = st.secrets["ANGEL_PIN"]
-        totp_key = st.secrets["ANGEL_TOTP_KEY"]
-        totp = pyotp.TOTP(totp_key).now()
-        smart_api = SmartConnect(api_key=api_key)
-        data = smart_api.generateSession(client_code, pin, totp)
-        if data.get('status'):
-            return smart_api
-        return None
+        smart_api = SmartConnect(api_key=st.secrets["ANGEL_API_KEY"])
+        totp = pyotp.TOTP(st.secrets["ANGEL_TOTP_KEY"]).now()
+        data = smart_api.generateSession(st.secrets["ANGEL_CLIENT_CODE"], st.secrets["ANGEL_PIN"], totp)
+        return smart_api if data.get('status') else None
     except Exception:
         return None
 
@@ -363,7 +225,7 @@ def calculate_atr(df, period=14):
 
 def fetch_and_prepare_df(smart_api, token):
     to_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-    from_date = (datetime.now() - timedelta(days=150)).strftime("%Y-%m-%d 09:15")
+    from_date = (datetime.now() - timedelta(days=160)).strftime("%Y-%m-%d 09:15")
     res = smart_api.getCandleData({
         "exchange": "NSE", "symboltoken": token,
         "interval": "ONE_DAY", "fromdate": from_date, "todate": to_date
@@ -387,170 +249,154 @@ def fetch_and_prepare_df(smart_api, token):
 
 def render_chart(df, symbol, target_val, sl_val):
     fig = make_subplots(
-        rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.60, 0.20, 0.20],
-        subplot_titles=[f"{symbol} Daily Matrix (EMA + Bollinger Bands)", "Volume Surge", "RSI (14) Momentum"]
+        rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.62, 0.18, 0.20],
+        subplot_titles=["", "वॉल्यूम ट्रेंड", "RSI (14) मोमेंटम"]
     )
-    fig.add_trace(go.Candlestick(x=df['Time'], open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name="Price", increasing_line_color='#00e699', decreasing_line_color='#ff3366'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA20'], line=dict(color='#ff9900', width=1.5), name="EMA 20"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA50'], line=dict(color='#00bfff', width=1.5), name="EMA 50"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Upper'], line=dict(color='#7d8b99', width=1, dash='dot'), name="Upper BB"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Lower'], line=dict(color='#7d8b99', width=1, dash='dot'), name="Lower BB"), row=1, col=1)
+    # कैंडलस्टिक
+    fig.add_trace(go.Candlestick(
+        x=df['Time'], open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'],
+        name="प्राइस", increasing_line_color='#10b981', decreasing_line_color='#ef4444'
+    ), row=1, col=1)
+    
+    # EMAs और बोलिंजर बैंड्स
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA20'], line=dict(color='#f59e0b', width=1.5), name="EMA 20"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA50'], line=dict(color='#38bdf8', width=1.5), name="EMA 50"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Upper'], line=dict(color='rgba(148, 163, 184, 0.4)', width=1, dash='dot'), name="Upper Band"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Lower'], line=dict(color='rgba(148, 163, 184, 0.4)', width=1, dash='dot'), name="Lower Band"), row=1, col=1)
+    
     if target_val and sl_val:
-        fig.add_hline(y=target_val, line_dash="dash", line_color="#00e699", annotation_text=f" Target: ₹{target_val}", annotation_position="top right", row=1, col=1)
-        fig.add_hline(y=sl_val, line_dash="dash", line_color="#ff3366", annotation_text=f" SL: ₹{sl_val}", annotation_position="bottom right", row=1, col=1)
-    vol_colors = ['#00e699' if c >= o else '#ff3366' for c, o in zip(df['Close'], df['Open'])]
-    fig.add_trace(go.Bar(x=df['Time'], y=df['Volume'], marker_color=vol_colors, name="Volume", opacity=0.8), row=2, col=1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['Vol_SMA20'], line=dict(color='#ffbb33', width=1), name="Vol Avg 20"), row=2, col=1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['RSI'], line=dict(color='#9966ff', width=1.8), name="RSI"), row=3, col=1)
-    fig.add_hline(y=70, line_dash="dash", line_color="#ff3366", opacity=0.6, row=3, col=1)
-    fig.add_hline(y=30, line_dash="dash", line_color="#00e699", opacity=0.6, row=3, col=1)
-    fig.update_layout(paper_bgcolor='#080a0f', plot_bgcolor='#111622', xaxis_rangeslider_visible=False, height=660, dragmode='pan', margin=dict(l=10, r=10, t=30, b=10), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="#8b9bb4", size=10)), font=dict(family="Courier New, monospace", color="#8b9bb4"))
-    fig.update_yaxes(gridcolor='#1e2638', fixedrange=False, row=1, col=1)
-    fig.update_yaxes(gridcolor='#1e2638', fixedrange=False, row=2, col=1)
-    fig.update_yaxes(gridcolor='#1e2638', fixedrange=True, range=[10, 90], row=3, col=1)
-    fig.update_xaxes(gridcolor='#1e2638')
-    st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
+        fig.add_hline(y=target_val, line_dash="dash", line_color="#10b981", annotation_text=f" Target ₹{target_val}", row=1, col=1)
+        fig.add_hline(y=sl_val, line_dash="dash", line_color="#ef4444", annotation_text=f" Stop Loss ₹{sl_val}", row=1, col=1)
+        
+    # वॉल्यूम
+    v_colors = ['#10b981' if c >= o else '#ef4444' for c, o in zip(df['Close'], df['Open'])]
+    fig.add_trace(go.Bar(x=df['Time'], y=df['Volume'], marker_color=v_colors, opacity=0.7, name="वॉल्यूम"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['Vol_SMA20'], line=dict(color='#fbbf24', width=1), name="वॉल्यूम SMA 20"), row=2, col=1)
+    
+    # RSI इंडिकेटर
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['RSI'], line=dict(color='#a855f7', width=1.7), name="RSI"), row=3, col=1)
+    fig.add_hrect(y0=30, y1=70, fillcolor="#38bdf8", opacity=0.05, line_width=0, row=3, col=1)
+    fig.add_hline(y=70, line_dash="dot", line_color="#ef4444", row=3, col=1)
+    fig.add_hline(y=30, line_dash="dot", line_color="#10b981", row=3, col=1)
 
-# --- TOP STATUS BAR ---
-c_title, c_badge = st.columns([3, 1])
-display_name = st.session_state.get('user_name', st.session_state['user'])
-with c_title:
-    st.markdown("<h2 style='margin-bottom:0;'>⚡ SANDEEP KUMAR <span style='font-size:1rem;color:#00d2c4;'>PRO TERMINAL</span></h2>", unsafe_allow_html=True)
-    st.caption(f"Authenticated Member: {display_name} ({st.session_state['user']}) • Angel One Live Sync")
-with c_badge:
-    st.markdown("<div style='text-align:right;padding-top:10px;'><span style='background:#102a27;color:#00e699;padding:4px 12px;border-radius:12px;font-size:0.75rem;border:1px solid #00e699;'>LIVE SYNC</span></div>", unsafe_allow_html=True)
+    fig.update_layout(
+        paper_bgcolor='#0b0f17', plot_bgcolor='#0e1422',
+        xaxis_rangeslider_visible=False, height=650, margin=dict(l=10, r=10, t=10, b=10),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="#94a3b8", size=10)),
+        font=dict(family="JetBrains Mono, monospace", color="#94a3b8")
+    )
+    fig.update_xaxes(gridcolor='#1e293b')
+    fig.update_yaxes(gridcolor='#1e293b')
+    st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': True, 'displayModeBar': False})
 
-# Sidebar with User Info & Logout
-st.sidebar.markdown(f"**Member:** `{display_name}`")
-if st.sidebar.button("🚪 Log Out", use_container_width=True):
+# --- हेडर बार ---
+col_head, col_status = st.columns([3, 1])
+display_user = st.session_state.get('user_name', 'Trader')
+with col_head:
+    st.markdown(f"""
+    <div style='display:flex; align-items:center; gap:12px;'>
+        <h2 style='margin:0; font-size:1.8rem; font-weight:800;'>⚡ PRO TERMINAL <span style='color:#38bdf8; font-size:0.9rem; border:1px solid #0284c7; padding:2px 8px; border-radius:6px;'>v2.0</span></h2>
+    </div>
+    <p style='color:#64748b; margin:2px 0 0 0; font-size:0.85rem;'>लाइव मार्केट फीड सक्रिय • सदस्य: <span style='color:#94a3b8;'>{display_user}</span></p>
+    """, unsafe_allow_html=True)
+
+with col_status:
+    st.markdown("""
+    <div style='text-align:right; margin-top:8px;'>
+        <span style='background:rgba(16, 185, 129, 0.15); color:#10b981; border:1px solid rgba(16, 185, 129, 0.3); padding:6px 14px; border-radius:20px; font-size:0.75rem; font-weight:600;'>
+            ● LIVE ANGEL ONE
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+
+# --- साइडबार सेटिंग्स ---
+st.sidebar.markdown(f"**अकाउंट:** `{display_user}`")
+if st.sidebar.button("लॉग आउट (Log Out)", use_container_width=True):
     supabase.auth.sign_out()
     st.session_state["user"] = None
     st.session_state["user_name"] = None
     st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🎛️ Risk Engine")
-account_capital = st.sidebar.number_input("Portfolio Capital (₹)", value=100000, step=25000)
-risk_per_trade_pct = st.sidebar.slider("Risk Per Trade (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
-target_pct_choice = st.sidebar.slider("Target Return (%)", min_value=8, max_value=15, value=10, step=1)
-min_score = st.sidebar.slider("Minimum Setup Score", min_value=50, max_value=85, value=60, step=5)
+st.sidebar.markdown("#### ⚙️ रिस्क मैनेजमेंट इंजन")
+account_capital = st.sidebar.number_input("कुल कैपिटल (₹)", value=100000, step=10000)
+risk_per_trade_pct = st.sidebar.slider("प्रति ट्रेड रिस्क (%)", min_value=0.5, max_value=3.0, value=1.5, step=0.25)
+target_pct_choice = st.sidebar.slider("टारगेट रिटर्न (%)", min_value=5, max_value=25, value=10, step=1)
+min_score = st.sidebar.slider("न्यूनतम मोमेंटम स्कोर", min_value=40, max_value=85, value=60, step=5)
 
-st.markdown("---")
+st.write("")
 
-# 🔍 SEARCH BAR SECTION
-st.subheader("🔍 Instant Stock Search & Chart Inspector")
-all_stock_names = sorted(list(MASTER_STOCKS.keys()))
-col_search, col_btn = st.columns([3, 1])
-with col_search:
-    searched_stock = st.selectbox("Stock search karein (Jaise: RELIANCE, TATAMOTORS, ZOMATO):", all_stock_names)
-with col_btn:
-    st.write("")
-    st.write("")
-    search_clicked = st.button("📊 Open Chart", use_container_width=True)
+# --- दो मुख्य टैब्स ---
+tab_screener, tab_search = st.tabs(["🚀 ऑटोमेटेड स्क्रीनर", "🔍 डीप स्टॉक चार्ट"])
 
-if search_clicked or st.session_state.get("active_search") == searched_stock:
-    st.session_state["active_search"] = searched_stock
-    smart_api = get_angel_client()
-    if smart_api:
-        with st.spinner(f"Fetching technicals for {searched_stock}..."):
-            token = MASTER_STOCKS[searched_stock]
-            df_search = fetch_and_prepare_df(smart_api, token)
-            if df_search is not None:
-                cmp = float(df_search.iloc[-1]['Close'])
-                atr = float(df_search.iloc[-1]['ATR']) if not pd.isna(df_search.iloc[-1]['ATR']) else (cmp * 0.02)
-                tgt = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
-                sl = round(cmp - (1.5 * atr), 2)
-                rsi = round(float(df_search.iloc[-1]['RSI']), 1)
+with tab_search:
+    c_s1, c_s2 = st.columns([3, 1])
+    with c_s1:
+        searched_stock = st.selectbox("स्टॉक चुनें", sorted(list(MASTER_STOCKS.keys())), label_visibility="collapsed")
+    with c_s2:
+        btn_search = st.button("चार्ट और मैट्रिक्स देखें", use_container_width=True)
+
+    if btn_search or st.session_state.get("active_search") == searched_stock:
+        st.session_state["active_search"] = searched_stock
+        api = get_angel_client()
+        if api:
+            with st.spinner("टेक्निकल डेटा लोड हो रहा है..."):
+                df_search = fetch_and_prepare_df(api, MASTER_STOCKS[searched_stock])
+                if df_search is not None:
+                    cmp = float(df_search.iloc[-1]['Close'])
+                    atr = float(df_search.iloc[-1]['ATR']) if not pd.isna(df_search.iloc[-1]['ATR']) else (cmp * 0.02)
+                    tgt = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
+                    sl = round(cmp - (1.5 * atr), 2)
+                    rsi = round(float(df_search.iloc[-1]['RSI']), 1)
+                    
+                    # मॉडर्न कार्ड्स
+                    k1, k2, k3, k4 = st.columns(4)
+                    k1.markdown(f"<div class='metric-card'><div class='label'>करंट प्राइस (CMP)</div><div class='val'>₹{cmp:,.2f}</div><div class='sub'>लाइव मार्केट रेट</div></div>", unsafe_allow_html=True)
+                    k2.markdown(f"<div class='metric-card'><div class='label'>टारगेट (+{target_pct_choice}%)</div><div class='val' style='color:#10b981;'>₹{tgt:,.2f}</div><div class='sub'>पोटेंशियल गेन</div></div>", unsafe_allow_html=True)
+                    k3.markdown(f"<div class='metric-card'><div class='label'>ATR स्टॉप लॉस</div><div class='val' style='color:#ef4444;'>₹{sl:,.2f}</div><div class='sub'>ट्रेलिंग रिस्क लेवल</div></div>", unsafe_allow_html=True)
+                    k4.markdown(f"<div class='metric-card'><div class='label'>RSI (14 दिन)</div><div class='val' style='color:#a855f7;'>{rsi}</div><div class='sub'>{'बुलिश मोमेंटम' if 50 <= rsi <= 70 else 'न्यूट्रल/एक्स्ट्रीम'}</div></div>", unsafe_allow_html=True)
+                    
+                    st.write("")
+                    render_chart(df_search, searched_stock, tgt, sl)
+
+with tab_screener:
+    if st.button("⚡ हाई मोमेंटम स्टॉक्स स्कैन करें", use_container_width=True):
+        api = get_angel_client()
+        if not api:
+            st.error("Angel One लॉगिन फ़ेल हुआ। API क्रेडेंशियल्स की जांच करें।")
+        else:
+            with st.spinner("EMA, RSI, वॉल्यूम और ब्रेकआउट्स स्कैन किए जा रहे हैं..."):
+                all_results = []
+                candles_store = {}
+                progress_bar = st.progress(0)
+                scan_universe = list(MASTER_STOCKS.items())[:25]
                 
-                m1, m2, m3, m4 = st.columns(4)
-                m1.metric("CMP", f"₹{round(cmp, 2)}")
-                m2.metric(f"Target +{target_pct_choice}%", f"₹{tgt}")
-                m3.metric("ATR Stop-Loss", f"₹{sl}")
-                m4.metric("RSI (14)", f"{rsi}")
-                render_chart(df_search, searched_stock, tgt, sl)
-
-st.markdown("---")
-
-# 🚀 SCREENER SECTION
-st.subheader("⚡ Automated Momentum Screener")
-if st.button("🚀 Run Deep Screener on Watchlist", use_container_width=True):
-    smart_api = get_angel_client()
-    if not smart_api:
-        st.error("Angel One session fail ho gaya. Secrets check karein.")
-    else:
-        with st.spinner("Screening high momentum setups..."):
-            all_results = []
-            candles_store = {}
-            progress = st.progress(0)
-            
-            scan_universe = list(MASTER_STOCKS.items())[:25]
-            for idx, (sym, token) in enumerate(scan_universe):
-                progress.progress((idx + 1) / len(scan_universe))
-                try:
-                    df = fetch_and_prepare_df(smart_api, token)
-                    if df is None:
-                        continue
-                    last, prev = df.iloc[-1], df.iloc[-2]
-                    cmp, ema20, ema50 = float(last['Close']), float(last['EMA20']), float(last['EMA50'])
-                    rsi = float(last['RSI'])
-                    vol = float(last['Volume'])
-                    avg_vol = float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
-                    atr = float(last['ATR']) if not pd.isna(last['ATR']) else (cmp * 0.02)
-                    
-                    score = 0
-                    if cmp > ema20 > ema50:
-                        score += 35
-                    elif cmp > ema20:
-                        score += 20
-                    
-                    if 50 <= rsi <= 70:
-                        score += 30
-                    elif 45 <= rsi < 50:
-                        score += 15
-                    
-                    vol_ratio = vol / avg_vol
-                    if vol_ratio >= 1.2:
-                        score += 25
-                    elif vol_ratio >= 1.0:
-                        score += 15
-                    
-                    if cmp > float(prev['High']):
-                        score += 10
-                    
-                    if score >= min_score:
-                        risk_amt = account_capital * (risk_per_trade_pct / 100.0)
-                        stop_loss = round(cmp - (1.5 * atr), 2)
-                        risk_per_share = cmp - stop_loss
-                        qty = int(risk_amt // risk_per_share) if risk_per_share > 0 else 0
-                        trade_capital = round(qty * cmp, 2)
-                        target_price = round(cmp * (1 + (target_pct_choice / 100.0)), 2)
+                for idx, (sym, token) in enumerate(scan_universe):
+                    progress_bar.progress((idx + 1) / len(scan_universe))
+                    try:
+                        df = fetch_and_prepare_df(api, token)
+                        if df is None:
+                            continue
+                        last, prev = df.iloc[-1], df.iloc[-2]
+                        cmp, ema20, ema50 = float(last['Close']), float(last['EMA20']), float(last['EMA50'])
+                        rsi = float(last['RSI'])
+                        vol = float(last['Volume'])
+                        avg_vol = float(last['Vol_SMA20']) if last['Vol_SMA20'] > 0 else 1.0
+                        atr = float(last['ATR']) if not pd.isna(last['ATR']) else (cmp * 0.02)
                         
-                        candles_store[sym] = df
-                        all_results.append({
-                            "Symbol": sym,
-                            "Score": f"{score}%",
-                            "CMP (₹)": round(cmp, 2),
-                            f"Target +{target_pct_choice}%": target_price,
-                            "Smart SL": stop_loss,
-                            "RSI": round(rsi, 1),
-                            "Vol Ratio": f"{round(vol_ratio, 2)}x",
-                            "Position Qty": qty,
-                            "Deploy Cap (₹)": trade_capital,
-                            "_score": score
-                        })
-                except Exception:
-                    continue
-
-            progress.empty()
-            if all_results:
-                all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
-                for item in all_results:
-                    del item['_score']
-                st.session_state["adv_results"] = all_results
-                st.session_state["adv_candles"] = candles_store
-
-if "adv_results" in st.session_state:
-    data = st.session_state["adv_results"]
-    if data:
-        st.success(f"🎯 Total {len(data)} Stocks Filtered!")
-        st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
+                        score = 0
+                        if cmp > ema20 > ema50: score += 35
+                        elif cmp > ema20: score += 20
+                        if 50 <= rsi <= 70: score += 30
+                        elif 45 <= rsi < 50: score += 15
+                        
+                        vol_ratio = vol / avg_vol
+                        if vol_ratio >= 1.2: score += 25
+                        elif vol_ratio >= 1.0: score += 15
+                        if cmp > float(prev['High']): score += 10
+                        
+                        if score >= min_score:
+                            risk_amt = account_capital * (risk_per_trade_pct / 100.0)
+                            stop_loss = round(cmp - (1.5 * atr), 2)
+                            risk_per_share = cmp - stop_loss
+             
