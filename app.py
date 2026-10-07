@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import requests
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pyotp, feedparser
@@ -7,11 +8,6 @@ from datetime import datetime, timedelta
 from SmartApi import SmartConnect
 from supabase import create_client, Client
 
-# --- पेज सेटअप व स्टेट ---
-st.set_page_config(page_title="AlphaX | Momentum Terminal", page_icon="⚡", layout="wide")
-defaults = {"user": None, "user_name": None, "auth_mode": "login", "lang": "English", "theme_mode": "Dark"}
-for k, v in defaults.items():
-    st.session_state.setdefault(k, v)
 # --- पेज सेटअप व स्टेट ---
 st.set_page_config(page_title="AlphaX | Momentum Terminal", page_icon="⚡", layout="wide")
 defaults = {"user": None, "user_name": None, "auth_mode": "login", "lang": "English", "theme_mode": "Dark"}
@@ -25,47 +21,50 @@ T = {
         "member": "Authenticated Member", "live_badge": "● LIVE ANGEL ONE", "risk_engine": "Risk Configuration",
         "portfolio_cap": "Portfolio Capital (₹)", "risk_per_trade": "Risk Per Trade (%)", "target_return": "Profit Target (%)",
         "min_score": "Min Momentum Threshold", "logout": "🚪 Log Out", "tab_screener": "🚀 Automated Scanner",
-        "tab_search": "🔍 Deep Stock Inspector", "select_asset": "Select Asset to Inspect", "gen_matrix": "📊 Generate Matrix",
-        "scan_btn": "⚡ Scan Momentum Setups Across Universe", "cmp": "Current Price (CMP)", "target": "Target",
-        "sl": "ATR Stop Loss", "rsi": "RSI (14 Day)", "scanning": "Filtering momentum setups across watchlist...",
-        "fetching": "Fetching technical metrics...", "filtered_title": "🎯 Screened Candidates", "col_symbol": "Symbol",
-        "col_score": "Confidence Score", "col_cmp": "CMP (₹)", "col_target": "Target", "col_sl": "Stop Loss",
-        "col_rsi": "RSI", "col_vol": "Volume Surge", "col_qty": "Position Qty", "col_cap": "Required Capital (₹)",
-        "login": "Login", "register": "Register", "welcome_back": "Welcome Back", "create_acc": "Create Account",
-        "full_name": "Full Name", "email": "Email", "password": "Password", "continue": "Continue",
-        "forgot_pwd": "Forgot Password?", "reset_access": "Reset Access", "send_reset": "Send Reset Link",
-        "back_login": "⬅️ Back to Login", "new_here": "Don't have an account? Register", "already_acc": "Already have an account? Login",
-        "vol_chart": "VOLUME PROFILE", "rsi_chart": "RSI (14) MOMENTUM", "price_chart": "PRICE", "theme_label": "🎨 Theme Mode"
+        "tab_search": "🔍 Deep Stock Inspector", "select_asset": "Search Stock / Index (e.g. NIFTY 50, TATA, RELIANCE)", 
+        "gen_matrix": "📊 Generate Matrix", "scan_btn": "⚡ Scan Momentum Setups Across Universe", 
+        "cmp": "Current Price (CMP)", "target": "Target", "sl": "ATR Stop Loss", "rsi": "RSI (14 Day)", 
+        "scanning": "Filtering momentum setups across watchlist...", "fetching": "Fetching technical metrics...", 
+        "filtered_title": "🎯 Screened Candidates", "col_symbol": "Symbol", "col_score": "Confidence Score", 
+        "col_cmp": "CMP (₹)", "col_target": "Target", "col_sl": "Stop Loss", "col_rsi": "RSI", "col_vol": "Volume Surge", 
+        "col_qty": "Position Qty", "col_cap": "Required Capital (₹)", "login": "Login", "register": "Register", 
+        "welcome_back": "Welcome Back", "create_acc": "Create Account", "full_name": "Full Name", "email": "Email", 
+        "password": "Password", "continue": "Continue", "forgot_pwd": "Forgot Password?", "reset_access": "Reset Access", 
+        "send_reset": "Send Reset Link", "back_login": "⬅️ Back to Login", "new_here": "Don't have an account? Register", 
+        "already_acc": "Already have an account? Login", "vol_chart": "VOLUME PROFILE", "rsi_chart": "RSI (14) MOMENTUM", 
+        "price_chart": "PRICE", "theme_label": "🎨 Theme Mode"
     },
     "Hindi": {
         "news_badge": "🔴 ताज़ा खबरें", "terminal_title": "मोमेंटम टर्मिनल", "live_feed": "लाइव मार्केट फीड सक्रिय",
         "member": "सक्रिय सदस्य", "live_badge": "● लाइव एंजल वन", "risk_engine": "रिस्क मैनेजमेंट इंजन",
         "portfolio_cap": "कुल कैपिटल (₹)", "risk_per_trade": "प्रति ट्रेड रिस्क (%)", "target_return": "टारगेट रिटर्न (%)",
         "min_score": "न्यूनतम मोमेंटम स्कोर", "logout": "🚪 लॉग आउट", "tab_screener": "🚀 ऑटोमेटेड स्क्रीनर",
-        "tab_search": "🔍 डीप स्टॉक चार्ट", "select_asset": "स्टॉक चुनें", "gen_matrix": "📊 चार्ट और मैट्रिक्स देखें",
-        "scan_btn": "⚡ हाई मोमेंटम स्टॉक्स स्कैन करें", "cmp": "करंट प्राइस (CMP)", "target": "टारगेट",
-        "sl": "ATR स्टॉप लॉस", "rsi": "RSI (14 दिन)", "scanning": "EMA, RSI और वॉल्यूम ब्रेकआउट्स स्कैन हो रहे हैं...",
-        "fetching": "टेक्निकल डेटा लोड हो रहा है...", "filtered_title": "🎯 चुने गए स्टॉक्स", "col_symbol": "स्टॉक",
-        "col_score": "मोमेंटम स्कोर", "col_cmp": "CMP (₹)", "col_target": "टारगेट", "col_sl": "स्टॉप लॉस",
-        "col_rsi": "RSI", "col_vol": "वॉल्यूम उछाल", "col_qty": "शेयर संख्या (Qty)", "col_cap": "जरूरी कैपिटल (₹)",
-        "login": "लॉगिन करें", "register": "रजिस्टर करें", "welcome_back": "वापसी पर स्वागत है", "create_acc": "नया अकाउंट बनाएं",
-        "full_name": "पूरा नाम", "email": "ईमेल", "password": "पासवर्ड", "continue": "आगे बढ़ें",
-        "forgot_pwd": "पासवर्ड भूल गए?", "reset_access": "पासवर्ड रीसेट", "send_reset": "रीसेट लिंक भेजें",
-        "back_login": "⬅️ लॉगिन पर वापस जाएं", "new_here": "नया अकाउंट बनाएं (Register)", "already_acc": "पहले से अकाउंट है? लॉगिन करें",
-        "vol_chart": "वॉल्यूम ट्रेंड", "rsi_chart": "RSI (14) मोमेंटम", "price_chart": "प्राइस", "theme_label": "🎨 थीम मोड"
+        "tab_search": "🔍 डीप स्टॉक चार्ट", "select_asset": "स्टॉक या इंडेक्स खोजें (उदा. NIFTY 50, TATA)", 
+        "gen_matrix": "📊 चार्ट और मैट्रिक्स देखें", "scan_btn": "⚡ हाई मोमेंटम स्टॉक्स स्कैन करें", 
+        "cmp": "करंट प्राइस (CMP)", "target": "टारगेट", "sl": "ATR स्टॉप लॉस", "rsi": "RSI (14 दिन)", 
+        "scanning": "EMA, RSI और वॉल्यूम ब्रेकआउट्स स्कैन हो रहे हैं...", "fetching": "टेक्निकल डेटा लोड हो रहा है...", 
+        "filtered_title": "🎯 चुने गए स्टॉक्स", "col_symbol": "स्टॉक", "col_score": "मोमेंटम स्कोर", 
+        "col_cmp": "CMP (₹)", "col_target": "टारगेट", "col_sl": "स्टॉप लॉस", "col_rsi": "RSI", "col_vol": "वॉल्यूम उछाल", 
+        "col_qty": "शेयर संख्या (Qty)", "col_cap": "जरूरी कैपिटल (₹)", "login": "लॉगिन करें", "register": "रजिस्टर करें", 
+        "welcome_back": "वापसी पर स्वागत है", "create_acc": "नया अकाउंट बनाएं", "full_name": "पूरा नाम", "email": "ईमेल", 
+        "password": "पासवर्ड", "continue": "आगे बढ़ें", "forgot_pwd": "पासवर्ड भूल गए?", "reset_access": "पासवर्ड रीसेट", 
+        "send_reset": "रीसेट लिंक भेजें", "back_login": "⬅️ लॉगिन पर वापस जाएं", "new_here": "नया अकाउंट बनाएं (Register)", 
+        "already_acc": "पहले से अकाउंट है? लॉगिन करें", "vol_chart": "वॉल्यूम ट्रेंड", "rsi_chart": "RSI (14) मोमेंटम", 
+        "price_chart": "प्राइस", "theme_label": "🎨 थीम मोड"
     }
 }
 txt = T[st.session_state["lang"]]
 is_light = (st.session_state["theme_mode"] == "Light")
+
 # --- टाइमफ्रेम मैपिंग ---
 INTERVAL_MAP = {
-    "5m":  ("FIVE_MINUTE", 5),       # 5 दिन डेटा
-    "15m": ("FIFTEEN_MINUTE", 15),   # 15 दिन डेटा
-    "1h":  ("ONE_HOUR", 60),          # 60 दिन डेटा
-    "1D":  ("ONE_DAY", 180)           # 180 दिन डेटा
+    "5m":  ("FIVE_MINUTE", 5),
+    "15m": ("FIFTEEN_MINUTE", 15),
+    "1h":  ("ONE_HOUR", 60),
+    "1D":  ("ONE_DAY", 180)
 }
 
-# --- डेटा फेचिंग व Supabase ---
+# --- मनीकंट्रोल न्यूज़ ---
 @st.cache_data(ttl=120)
 def fetch_moneycontrol_news():
     try:
@@ -79,6 +78,39 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
+# --- सभी NSE स्टॉक्स और NIFTY 50 मास्टर डेटा फ़ेच (24h Cache) ---
+@st.cache_data(ttl=86400)
+def load_all_nse_instruments():
+    try:
+        url = "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
+        res = requests.get(url, timeout=10)
+        data = res.json()
+        stocks = {}
+        # Nifty 50 इंडेक्स सबसे पहले जोड़ें
+        stocks["NIFTY 50 (INDEX)"] = {"token": "99926000", "exch": "NSE"}
+        stocks["BANKNIFTY (INDEX)"] = {"token": "99926009", "exch": "NSE"}
+        
+        for item in data:
+            # केवल NSE Equity (NSE-EQ) उठाएं
+            if item.get("exch_seg") == "NSE" and item.get("symbol", "").endswith("-EQ"):
+                sym = item["symbol"].replace("-EQ", "")
+                stocks[f"{sym} | {item.get('name', '')[:20]}"] = {
+                    "token": item.get("token"),
+                    "symbol": sym,
+                    "exch": "NSE"
+                }
+        return stocks
+    except Exception:
+        # बैकअप लिस्ट यदि नेटवर्क इशू हो
+        return {
+            "NIFTY 50 (INDEX)": {"token": "99926000", "exch": "NSE"},
+            "RELIANCE": {"token": "2885", "exch": "NSE"},
+            "TCS": {"token": "11536", "exch": "NSE"},
+            "HDFCBANK": {"token": "1333", "exch": "NSE"},
+            "INFY": {"token": "1594", "exch": "NSE"}
+        }
+
+ALL_INSTRUMENTS = load_all_nse_instruments()
 # ================= ऑथेंटिकेशन स्क्रीन =================
 if st.session_state["user"] is None:
     st.markdown("""<style>
@@ -168,17 +200,6 @@ if news_feed:
     items = "".join([f'<a href="{i["link"]}" target="_blank" class="ticker-item"><span class="ticker-bullet">⚡</span>{i["title"]}</a>' for i in news_feed])
     st.markdown(f'<div class="news-ticker-container"><div class="news-badge">{txt["news_badge"]}</div><div class="ticker-scroll-wrap"><div class="ticker-track">{items}</div></div></div>', unsafe_allow_html=True)
 
-# --- स्टॉक्स लिस्ट ---
-MASTER_STOCKS = {
-    "RELIANCE": "2885", "TCS": "11536", "HDFCBANK": "1333", "INFY": "1594", "ICICIBANK": "4963",
-    "BHARTIARTL": "10604", "SBIN": "3045", "LT": "11483", "ITC": "1660", "TATAMOTORS": "3456",
-    "AXISBANK": "5900", "KOTAKBANK": "1922", "TITAN": "3506", "BAJFINANCE": "317", "SUNPHARMA": "3351",
-    "NTPC": "11630", "POWERGRID": "14977", "TATASTEEL": "3499", "COALINDIA": "20374", "VEDL": "3063",
-    "HINDALCO": "1363", "BEL": "383", "HAL": "2303", "DLF": "14732", "TRENT": "1964", "ADANIENT": "25",
-    "ADANIPORTS": "15083", "ASIANPAINT": "236", "BAJAJFINSV": "16675", "ZOMATO": "5097", "JIOFIN": "18143",
-    "IRFC": "160", "RVNL": "13745", "BHEL": "438"
-}
-
 def get_angel_client():
     try:
         api = SmartConnect(api_key=st.secrets["ANGEL_API_KEY"])
@@ -190,12 +211,12 @@ def fetch_and_prepare_df(api, token, tf="1D"):
     to_d = datetime.now().strftime("%Y-%m-%d %H:%M")
     from_d = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d 09:15")
     
-    res = api.getCandleData({"exchange": "NSE", "symboltoken": token, "interval": interval_code, "fromdate": from_d, "todate": to_d})
+    res = api.getCandleData({"exchange": "NSE", "symboltoken": str(token), "interval": interval_code, "fromdate": from_d, "todate": to_d})
     if not res.get('status') or not res.get('data') or len(res['data']) < 25: return None
     df = pd.DataFrame(res['data'], columns=['Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
     df['Time'] = pd.to_datetime(df['Time'])
     
-    # EMAs & Bands
+    # इंडिकेटर्स
     df['EMA20'], df['EMA50'] = df['Close'].ewm(span=20, adjust=False).mean(), df['Close'].ewm(span=50, adjust=False).mean()
     df['BB_Mid'] = df['Close'].rolling(20).mean()
     df['BB_Upper'], df['BB_Lower'] = df['BB_Mid'] + 2*df['Close'].rolling(20).std(), df['BB_Mid'] - 2*df['Close'].rolling(20).std()
@@ -208,9 +229,8 @@ def fetch_and_prepare_df(api, token, tf="1D"):
     tr = pd.concat([df['High'] - df['Low'], (df['High'] - df['Close'].shift()).abs(), (df['Low'] - df['Close'].shift()).abs()], axis=1).max(axis=1)
     df['ATR'] = tr.rolling(14).mean()
     
-    # MACD (12, 26, 9)
-    ema12 = df['Close'].ewm(span=12, adjust=False).mean()
-    ema26 = df['Close'].ewm(span=26, adjust=False).mean()
+    # MACD
+    ema12, ema26 = df['Close'].ewm(span=12, adjust=False).mean(), df['Close'].ewm(span=26, adjust=False).mean()
     df['MACD'] = ema12 - ema26
     df['Signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
     df['MACD_Hist'] = df['MACD'] - df['Signal']
@@ -229,11 +249,8 @@ def render_chart(df, symbol, target_val, sl_val, active_inds, tf="1D"):
     if show_macd: titles.append("MACD")
 
     fig = make_subplots(rows=rows, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=heights, subplot_titles=titles)
-    
-    # कैंडलस्टिक
     fig.add_trace(go.Candlestick(x=df['Time'], open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name=txt["price_chart"], increasing_line_color='#10b981', decreasing_line_color='#ef4444'), 1, 1)
     
-    # सिलेक्टेड इंडिकेटर्स
     if "EMA 20" in active_inds: fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA20'], line=dict(color='#f59e0b', width=1.5), name="EMA 20"), 1, 1)
     if "EMA 50" in active_inds: fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA50'], line=dict(color='#0284c7' if is_light else '#38bdf8', width=1.5), name="EMA 50"), 1, 1)
     if "Bollinger Bands" in active_inds:
@@ -275,11 +292,9 @@ def render_chart(df, symbol, target_val, sl_val, active_inds, tf="1D"):
         newshape=dict(line=dict(color="#38bdf8", width=2))
     )
     
-    # टच ज़ूम लॉक
     fig.update_xaxes(gridcolor="#e2e8f0" if is_light else "#1e293b", fixedrange=True)
     fig.update_yaxes(gridcolor="#e2e8f0" if is_light else "#1e293b", fixedrange=True)
     
-    # इंट्राडे टाइमफ्रेम में रात और वीकेंड का गैप हटाएं
     if tf in ["5m", "15m", "1h"]:
         fig.update_xaxes(rangebreaks=[dict(bounds=["sat", "mon"]), dict(bounds=[15.5, 9.25], pattern="hour")])
 
@@ -289,8 +304,7 @@ def render_chart(df, symbol, target_val, sl_val, active_inds, tf="1D"):
         'modeBarButtonsToRemove': ['zoom2d', 'pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d'],
         'scrollZoom': False, 'doubleClick': False
     })
-
-# --- हेडर (AlphaX Momentum Terminal) ---
+# --- हेडर ---
 display_user = st.session_state.get('user_name', 'Trader')
 col_head, col_status = st.columns([3, 1])
 with col_head:
@@ -329,18 +343,24 @@ account_capital = st.sidebar.number_input(txt["portfolio_cap"], value=100000, st
 risk_per_trade_pct = st.sidebar.slider(txt["risk_per_trade"], 0.5, 3.0, 1.5, 0.25)
 target_pct_choice = st.sidebar.slider(txt["target_return"], 5, 25, 10, 1)
 min_score = st.sidebar.slider(txt["min_score"], 40, 85, 60, 5)
+
 # --- टैब्स ---
 tab_screener, tab_search = st.tabs([txt["tab_screener"], txt["tab_search"]])
 
 with tab_search:
     c_s1, c_s2 = st.columns([3, 1])
-    searched_stock = c_s1.selectbox(txt["select_asset"], sorted(list(MASTER_STOCKS.keys())), label_visibility="collapsed")
+    # भारतीय बाज़ार के सभी 2000+ स्टॉक्स और NIFTY 50 सर्च
+    searched_stock = c_s1.selectbox(
+        txt["select_asset"], 
+        options=list(ALL_INSTRUMENTS.keys()), 
+        index=0, 
+        label_visibility="collapsed"
+    )
     btn_search = c_s2.button(txt["gen_matrix"], use_container_width=True)
 
     if btn_search or st.session_state.get("active_search") == searched_stock:
         st.session_state["active_search"] = searched_stock
         
-        # टूलबार: Timeframe + Indicators
         c_tf, c_ind = st.columns([1.5, 2.5])
         with c_tf:
             selected_tf = st.radio("Timeframe", ["5m", "15m", "1h", "1D"], index=3, horizontal=True, label_visibility="collapsed")
@@ -349,8 +369,11 @@ with tab_search:
 
         api = get_angel_client()
         if api:
+            stock_info = ALL_INSTRUMENTS[searched_stock]
+            token = stock_info["token"]
+            
             with st.spinner(f"Loading {selected_tf} chart for {searched_stock}..."):
-                df_search = fetch_and_prepare_df(api, MASTER_STOCKS[searched_stock], tf=selected_tf)
+                df_search = fetch_and_prepare_df(api, token, tf=selected_tf)
                 if df_search is not None:
                     cmp = float(df_search.iloc[-1]['Close'])
                     atr = float(df_search.iloc[-1]['ATR']) if pd.notna(df_search.iloc[-1]['ATR']) else (cmp * 0.02)
@@ -368,6 +391,8 @@ with tab_search:
                     
                     st.write("")
                     render_chart(df_search, searched_stock, tgt, sl, selected_inds, tf=selected_tf)
+                else:
+                    st.warning(f"Could not load data for {searched_stock}. Market might be closed or token inactive.")
 
 with tab_screener:
     if st.button(txt["scan_btn"], use_container_width=True):
@@ -376,10 +401,13 @@ with tab_screener:
         else:
             with st.spinner(txt["scanning"]):
                 all_results, p_bar = [], st.progress(0)
-                scan_universe = list(MASTER_STOCKS.items())[:25]
-                for idx, (sym, token) in enumerate(scan_universe):
+                # स्क्रीनर के लिए टॉप लिक्विड स्टॉक्स (Nifty 50 स्टॉक्स)
+                scan_universe = [k for k in ALL_INSTRUMENTS.keys() if "INDEX" not in k][:30]
+                
+                for idx, sym_label in enumerate(scan_universe):
                     p_bar.progress((idx + 1) / len(scan_universe))
                     try:
+                        token = ALL_INSTRUMENTS[sym_label]["token"]
                         df = fetch_and_prepare_df(api, token, tf="1D")
                         if df is None: continue
                         last, prev = df.iloc[-1], df.iloc[-2]
@@ -395,8 +423,9 @@ with tab_screener:
                             atr = float(last['ATR']) if pd.notna(last['ATR']) else (cmp * 0.02)
                             sl = round(cmp - 1.5 * atr, 2)
                             qty = int((account_capital * (risk_per_trade_pct / 100)) // (cmp - sl)) if (cmp - sl) > 0 else 0
+                            clean_sym = sym_label.split(" | ")[0]
                             all_results.append({
-                                txt["col_symbol"]: sym, txt["col_score"]: score, txt["col_cmp"]: round(cmp, 2),
+                                txt["col_symbol"]: clean_sym, txt["col_score"]: score, txt["col_cmp"]: round(cmp, 2),
                                 f"{txt['col_target']} (+{target_pct_choice}%)": round(cmp * (1 + target_pct_choice/100), 2),
                                 txt["col_sl"]: sl, txt["col_rsi"]: round(rsi, 1), txt["col_vol"]: f"{round(vol_ratio, 1)}x",
                                 txt["col_qty"]: qty, txt["col_cap"]: round(qty * cmp, 2), "_score": score
