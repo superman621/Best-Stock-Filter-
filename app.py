@@ -12,6 +12,11 @@ st.set_page_config(page_title="AlphaX | Momentum Terminal", page_icon="⚡", lay
 defaults = {"user": None, "user_name": None, "auth_mode": "login", "lang": "English", "theme_mode": "Dark"}
 for k, v in defaults.items():
     st.session_state.setdefault(k, v)
+# --- पेज सेटअप व स्टेट ---
+st.set_page_config(page_title="AlphaX | Momentum Terminal", page_icon="⚡", layout="wide")
+defaults = {"user": None, "user_name": None, "auth_mode": "login", "lang": "English", "theme_mode": "Dark"}
+for k, v in defaults.items():
+    st.session_state.setdefault(k, v)
 
 # --- भाषा डिक्शनरी ---
 T = {
@@ -52,6 +57,13 @@ T = {
 }
 txt = T[st.session_state["lang"]]
 is_light = (st.session_state["theme_mode"] == "Light")
+# --- टाइमफ्रेम मैपिंग ---
+INTERVAL_MAP = {
+    "5m":  ("FIVE_MINUTE", 5),       # 5 दिन डेटा
+    "15m": ("FIFTEEN_MINUTE", 15),   # 15 दिन डेटा
+    "1h":  ("ONE_HOUR", 60),          # 60 दिन डेटा
+    "1D":  ("ONE_DAY", 180)           # 180 दिन डेटा
+}
 
 # --- डेटा फेचिंग व Supabase ---
 @st.cache_data(ttl=120)
@@ -122,7 +134,7 @@ if st.session_state["user"] is None:
             if is_login and st.button(txt["forgot_pwd"], use_container_width=True):
                 st.session_state["auth_mode"] = "forgot"; st.rerun()
     st.stop()
-    # ================= शॉर्ट CSS (CSS Variables) =================
+# ================= यूनिफाइड CSS (CSS Variables) =================
 theme_vars = """
     --bg: #f7f9fa; --fg: #111827; --card-bg: #fff; --border: #e2e8f0; --primary: #0066cc;
     --side-bg: #fff; --news-bg: #dbeafe; --news-text: #0066cc; --bullet: #0066cc;
@@ -156,7 +168,7 @@ if news_feed:
     items = "".join([f'<a href="{i["link"]}" target="_blank" class="ticker-item"><span class="ticker-bullet">⚡</span>{i["title"]}</a>' for i in news_feed])
     st.markdown(f'<div class="news-ticker-container"><div class="news-badge">{txt["news_badge"]}</div><div class="ticker-scroll-wrap"><div class="ticker-track">{items}</div></div></div>', unsafe_allow_html=True)
 
-# --- स्टॉक्स और टेक्निकल एनालिसिस ---
+# --- स्टॉक्स लिस्ट ---
 MASTER_STOCKS = {
     "RELIANCE": "2885", "TCS": "11536", "HDFCBANK": "1333", "INFY": "1594", "ICICIBANK": "4963",
     "BHARTIARTL": "10604", "SBIN": "3045", "LT": "11483", "ITC": "1660", "TATAMOTORS": "3456",
@@ -173,14 +185,17 @@ def get_angel_client():
         return api if api.generateSession(st.secrets["ANGEL_CLIENT_CODE"], st.secrets["ANGEL_PIN"], pyotp.TOTP(st.secrets["ANGEL_TOTP_KEY"]).now()).get('status') else None
     except Exception: return None
 
-def fetch_and_prepare_df(api, token):
-    to_d, from_d = datetime.now().strftime("%Y-%m-%d %H:%M"), (datetime.now() - timedelta(days=160)).strftime("%Y-%m-%d 09:15")
-    res = api.getCandleData({"exchange": "NSE", "symboltoken": token, "interval": "ONE_DAY", "fromdate": from_d, "todate": to_d})
-    if not res.get('status') or not res.get('data') or len(res['data']) < 35: return None
+def fetch_and_prepare_df(api, token, tf="1D"):
+    interval_code, days_back = INTERVAL_MAP.get(tf, ("ONE_DAY", 180))
+    to_d = datetime.now().strftime("%Y-%m-%d %H:%M")
+    from_d = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d 09:15")
+    
+    res = api.getCandleData({"exchange": "NSE", "symboltoken": token, "interval": interval_code, "fromdate": from_d, "todate": to_d})
+    if not res.get('status') or not res.get('data') or len(res['data']) < 25: return None
     df = pd.DataFrame(res['data'], columns=['Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
     df['Time'] = pd.to_datetime(df['Time'])
     
-    # इंडिकेटर्स
+    # EMAs & Bands
     df['EMA20'], df['EMA50'] = df['Close'].ewm(span=20, adjust=False).mean(), df['Close'].ewm(span=50, adjust=False).mean()
     df['BB_Mid'] = df['Close'].rolling(20).mean()
     df['BB_Upper'], df['BB_Lower'] = df['BB_Mid'] + 2*df['Close'].rolling(20).std(), df['BB_Mid'] - 2*df['Close'].rolling(20).std()
@@ -192,32 +207,88 @@ def fetch_and_prepare_df(api, token):
     df['RSI'] = 100 - (100 / (1 + rs))
     tr = pd.concat([df['High'] - df['Low'], (df['High'] - df['Close'].shift()).abs(), (df['Low'] - df['Close'].shift()).abs()], axis=1).max(axis=1)
     df['ATR'] = tr.rolling(14).mean()
+    
+    # MACD (12, 26, 9)
+    ema12 = df['Close'].ewm(span=12, adjust=False).mean()
+    ema26 = df['Close'].ewm(span=26, adjust=False).mean()
+    df['MACD'] = ema12 - ema26
+    df['Signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
+    df['MACD_Hist'] = df['MACD'] - df['Signal']
     return df
 
-def render_chart(df, symbol, target_val, sl_val):
-    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.62, 0.18, 0.20], subplot_titles=["", txt["vol_chart"], txt["rsi_chart"]])
-    fig.add_trace(go.Candlestick(x=df['Time'], open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name=txt["price_chart"], increasing_line_color='#10b981', decreasing_line_color='#ef4444'), 1, 1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA20'], line=dict(color='#f59e0b', width=1.5), name="EMA 20"), 1, 1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA50'], line=dict(color='#0284c7' if is_light else '#38bdf8', width=1.5), name="EMA 50"), 1, 1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Upper'], line=dict(color='#94a3b8', width=1, dash='dot'), name="Upper Band"), 1, 1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Lower'], line=dict(color='#94a3b8', width=1, dash='dot'), name="Lower Band"), 1, 1)
+def render_chart(df, symbol, target_val, sl_val, active_inds, tf="1D"):
+    show_vol = "Volume" in active_inds
+    show_rsi = "RSI" in active_inds
+    show_macd = "MACD" in active_inds
     
-    if target_val and sl_val:
-        fig.add_hline(y=target_val, line_dash="dash", line_color="#10b981", annotation_text=f" {txt['target']} ₹{target_val}", row=1, col=1)
-        fig.add_hline(y=sl_val, line_dash="dash", line_color="#ef4444", annotation_text=f" {txt['sl']} ₹{sl_val}", row=1, col=1)
-        
-    v_colors = ['#10b981' if c >= o else '#ef4444' for c, o in zip(df['Close'], df['Open'])]
-    fig.add_trace(go.Bar(x=df['Time'], y=df['Volume'], marker_color=v_colors, opacity=0.7, name="Volume"), 2, 1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['Vol_SMA20'], line=dict(color='#d97706' if is_light else '#fbbf24', width=1), name="Vol MA"), 2, 1)
-    fig.add_trace(go.Scatter(x=df['Time'], y=df['RSI'], line=dict(color='#7c3aed' if is_light else '#a855f7', width=1.7), name="RSI"), 3, 1)
-    fig.add_hrect(y0=30, y1=70, fillcolor="#0284c7" if is_light else "#38bdf8", opacity=0.08, line_width=0, row=3, col=1)
-    fig.add_hline(y=70, line_dash="dot", line_color="#ef4444", row=3, col=1)
-    fig.add_hline(y=30, line_dash="dot", line_color="#10b981", row=3, col=1)
+    rows = 1 + int(show_vol) + int(show_rsi) + int(show_macd)
+    heights = [0.55] + [0.45 / (rows - 1)] * (rows - 1) if rows > 1 else [1.0]
+    titles = [""]
+    if show_vol: titles.append(txt["vol_chart"])
+    if show_rsi: titles.append(txt["rsi_chart"])
+    if show_macd: titles.append("MACD")
 
-    fig.update_layout(paper_bgcolor="#ffffff" if is_light else "#0b0f17", plot_bgcolor="#f8fafc" if is_light else "#0e1422",
-                      xaxis_rangeslider_visible=False, height=650, margin=dict(l=10, r=10, t=10, b=10),
-                      legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-    st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': True, 'displayModeBar': False})
+    fig = make_subplots(rows=rows, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=heights, subplot_titles=titles)
+    
+    # कैंडलस्टिक
+    fig.add_trace(go.Candlestick(x=df['Time'], open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name=txt["price_chart"], increasing_line_color='#10b981', decreasing_line_color='#ef4444'), 1, 1)
+    
+    # सिलेक्टेड इंडिकेटर्स
+    if "EMA 20" in active_inds: fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA20'], line=dict(color='#f59e0b', width=1.5), name="EMA 20"), 1, 1)
+    if "EMA 50" in active_inds: fig.add_trace(go.Scatter(x=df['Time'], y=df['EMA50'], line=dict(color='#0284c7' if is_light else '#38bdf8', width=1.5), name="EMA 50"), 1, 1)
+    if "Bollinger Bands" in active_inds:
+        fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Upper'], line=dict(color='rgba(148,163,184,0.4)', width=1, dash='dot'), name="BB Upper"), 1, 1)
+        fig.add_trace(go.Scatter(x=df['Time'], y=df['BB_Lower'], line=dict(color='rgba(148,163,184,0.4)', width=1, dash='dot'), fill='tonexty', fillcolor='rgba(148,163,184,0.05)', name="BB Lower"), 1, 1)
+        
+    if target_val and sl_val:
+        cmp = float(df.iloc[-1]['Close'])
+        fig.add_hrect(y0=cmp, y1=target_val, fillcolor="rgba(16, 185, 129, 0.08)", line_width=0, row=1, col=1)
+        fig.add_hrect(y0=sl_val, y1=cmp, fillcolor="rgba(239, 68, 68, 0.08)", line_width=0, row=1, col=1)
+        fig.add_hline(y=target_val, line_dash="dash", line_color="#10b981", annotation_text=f" TGT ₹{target_val}", row=1, col=1)
+        fig.add_hline(y=sl_val, line_dash="dash", line_color="#ef4444", annotation_text=f" SL ₹{sl_val}", row=1, col=1)
+        
+    curr_r = 2
+    if show_vol:
+        v_colors = ['#10b981' if c >= o else '#ef4444' for c, o in zip(df['Close'], df['Open'])]
+        fig.add_trace(go.Bar(x=df['Time'], y=df['Volume'], marker_color=v_colors, opacity=0.75, name="Volume"), curr_r, 1)
+        fig.add_trace(go.Scatter(x=df['Time'], y=df['Vol_SMA20'], line=dict(color='#fbbf24', width=1.2), name="Vol MA"), curr_r, 1)
+        curr_r += 1
+        
+    if show_rsi:
+        fig.add_trace(go.Scatter(x=df['Time'], y=df['RSI'], line=dict(color='#a855f7', width=1.6), name="RSI"), curr_r, 1)
+        fig.add_hrect(y0=30, y1=70, fillcolor="#0284c7" if is_light else "#38bdf8", opacity=0.08, line_width=0, row=curr_r, col=1)
+        fig.add_hline(y=70, line_dash="dot", line_color="#ef4444", row=curr_r, col=1)
+        fig.add_hline(y=30, line_dash="dot", line_color="#10b981", row=curr_r, col=1)
+        curr_r += 1
+
+    if show_macd:
+        h_colors = ['#10b981' if h >= 0 else '#ef4444' for h in df['MACD_Hist']]
+        fig.add_trace(go.Bar(x=df['Time'], y=df['MACD_Hist'], marker_color=h_colors, opacity=0.6, name="Hist"), curr_r, 1)
+        fig.add_trace(go.Scatter(x=df['Time'], y=df['MACD'], line=dict(color='#0284c7' if is_light else '#38bdf8', width=1.3), name="MACD"), curr_r, 1)
+        fig.add_trace(go.Scatter(x=df['Time'], y=df['Signal'], line=dict(color='#f59e0b', width=1.3), name="Signal"), curr_r, 1)
+
+    fig.update_layout(
+        paper_bgcolor="#ffffff" if is_light else "#0b0f17", plot_bgcolor="#f8fafc" if is_light else "#0e1422",
+        dragmode=False, xaxis_rangeslider_visible=False, height=680, margin=dict(l=10, r=10, t=20, b=10),
+        legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="right", x=1, font=dict(color="#334155" if is_light else "#94a3b8", size=10)),
+        font=dict(family="Arial, sans-serif" if is_light else "JetBrains Mono, monospace", color="#334155" if is_light else "#94a3b8"),
+        newshape=dict(line=dict(color="#38bdf8", width=2))
+    )
+    
+    # टच ज़ूम लॉक
+    fig.update_xaxes(gridcolor="#e2e8f0" if is_light else "#1e293b", fixedrange=True)
+    fig.update_yaxes(gridcolor="#e2e8f0" if is_light else "#1e293b", fixedrange=True)
+    
+    # इंट्राडे टाइमफ्रेम में रात और वीकेंड का गैप हटाएं
+    if tf in ["5m", "15m", "1h"]:
+        fig.update_xaxes(rangebreaks=[dict(bounds=["sat", "mon"]), dict(bounds=[15.5, 9.25], pattern="hour")])
+
+    st.plotly_chart(fig, use_container_width=True, config={
+        'displayModeBar': True,
+        'modeBarButtonsToAdd': ['drawline', 'drawopenpath', 'drawrect', 'eraseshape'],
+        'modeBarButtonsToRemove': ['zoom2d', 'pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d'],
+        'scrollZoom': False, 'doubleClick': False
+    })
 
 # --- हेडर (AlphaX Momentum Terminal) ---
 display_user = st.session_state.get('user_name', 'Trader')
@@ -264,12 +335,22 @@ tab_screener, tab_search = st.tabs([txt["tab_screener"], txt["tab_search"]])
 with tab_search:
     c_s1, c_s2 = st.columns([3, 1])
     searched_stock = c_s1.selectbox(txt["select_asset"], sorted(list(MASTER_STOCKS.keys())), label_visibility="collapsed")
-    if c_s2.button(txt["gen_matrix"], use_container_width=True) or st.session_state.get("active_search") == searched_stock:
+    btn_search = c_s2.button(txt["gen_matrix"], use_container_width=True)
+
+    if btn_search or st.session_state.get("active_search") == searched_stock:
         st.session_state["active_search"] = searched_stock
+        
+        # टूलबार: Timeframe + Indicators
+        c_tf, c_ind = st.columns([1.5, 2.5])
+        with c_tf:
+            selected_tf = st.radio("Timeframe", ["5m", "15m", "1h", "1D"], index=3, horizontal=True, label_visibility="collapsed")
+        with c_ind:
+            selected_inds = st.multiselect("Indicators", ["EMA 20", "EMA 50", "Bollinger Bands", "Volume", "RSI", "MACD"], default=["EMA 20", "EMA 50", "Volume", "RSI"], label_visibility="collapsed")
+
         api = get_angel_client()
         if api:
-            with st.spinner(txt["fetching"]):
-                df_search = fetch_and_prepare_df(api, MASTER_STOCKS[searched_stock])
+            with st.spinner(f"Loading {selected_tf} chart for {searched_stock}..."):
+                df_search = fetch_and_prepare_df(api, MASTER_STOCKS[searched_stock], tf=selected_tf)
                 if df_search is not None:
                     cmp = float(df_search.iloc[-1]['Close'])
                     atr = float(df_search.iloc[-1]['ATR']) if pd.notna(df_search.iloc[-1]['ATR']) else (cmp * 0.02)
@@ -277,14 +358,16 @@ with tab_search:
                     
                     cols = st.columns(4)
                     card_data = [
-                        (txt['cmp'], f"₹{cmp:,.2f}", "Live NSE Price", ""),
+                        (txt['cmp'], f"₹{cmp:,.2f}", f"Live {selected_tf} Price", ""),
                         (f"{txt['target']} (+{target_pct_choice}%)", f"₹{tgt:,.2f}", "Upside Target", "color:#10b981;"),
                         (txt['sl'], f"₹{sl:,.2f}", "Trailing Protection", "color:#ef4444;"),
                         (txt['rsi'], f"{rsi}", "Bullish" if 50 <= rsi <= 70 else "Neutral/Extreme", "color:#7c3aed;")
                     ]
                     for col, (l, v, s, sty) in zip(cols, card_data):
                         col.markdown(f"<div class='metric-card'><div class='label'>{l}</div><div class='val' style='{sty}'>{v}</div><div class='sub'>{s}</div></div>", unsafe_allow_html=True)
-                    render_chart(df_search, searched_stock, tgt, sl)
+                    
+                    st.write("")
+                    render_chart(df_search, searched_stock, tgt, sl, selected_inds, tf=selected_tf)
 
 with tab_screener:
     if st.button(txt["scan_btn"], use_container_width=True):
@@ -297,7 +380,7 @@ with tab_screener:
                 for idx, (sym, token) in enumerate(scan_universe):
                     p_bar.progress((idx + 1) / len(scan_universe))
                     try:
-                        df = fetch_and_prepare_df(api, token)
+                        df = fetch_and_prepare_df(api, token, tf="1D")
                         if df is None: continue
                         last, prev = df.iloc[-1], df.iloc[-2]
                         cmp, ema20, ema50, rsi = float(last['Close']), float(last['EMA20']), float(last['EMA50']), float(last['RSI'])
