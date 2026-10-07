@@ -8,7 +8,7 @@ from SmartApi import SmartConnect
 from supabase import create_client, Client
 
 # --- पेज सेटअप व स्टेट ---
-st.set_page_config(page_title="Sandeep Kumar | Pro Terminal 2.0", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="AlphaX | Momentum Terminal", page_icon="⚡", layout="wide")
 defaults = {"user": None, "user_name": None, "auth_mode": "login", "lang": "English", "theme_mode": "Dark"}
 for k, v in defaults.items():
     st.session_state.setdefault(k, v)
@@ -16,7 +16,7 @@ for k, v in defaults.items():
 # --- भाषा डिक्शनरी ---
 T = {
     "English": {
-        "news_badge": "🔴 LIVE NEWS", "terminal_title": "PRO TERMINAL", "live_feed": "Live Data Feed Active",
+        "news_badge": "🔴 LIVE NEWS", "terminal_title": "MOMENTUM TERMINAL", "live_feed": "Live Data Feed Active",
         "member": "Authenticated Member", "live_badge": "● LIVE ANGEL ONE", "risk_engine": "Risk Configuration",
         "portfolio_cap": "Portfolio Capital (₹)", "risk_per_trade": "Risk Per Trade (%)", "target_return": "Profit Target (%)",
         "min_score": "Min Momentum Threshold", "logout": "🚪 Log Out", "tab_screener": "🚀 Automated Scanner",
@@ -33,7 +33,7 @@ T = {
         "vol_chart": "VOLUME PROFILE", "rsi_chart": "RSI (14) MOMENTUM", "price_chart": "PRICE", "theme_label": "🎨 Theme Mode"
     },
     "Hindi": {
-        "news_badge": "🔴 ताज़ा खबरें", "terminal_title": "प्रो टर्मिनल", "live_feed": "लाइव मार्केट फीड सक्रिय",
+        "news_badge": "🔴 ताज़ा खबरें", "terminal_title": "मोमेंटम टर्मिनल", "live_feed": "लाइव मार्केट फीड सक्रिय",
         "member": "सक्रिय सदस्य", "live_badge": "● लाइव एंजल वन", "risk_engine": "रिस्क मैनेजमेंट इंजन",
         "portfolio_cap": "कुल कैपिटल (₹)", "risk_per_trade": "प्रति ट्रेड रिस्क (%)", "target_return": "टारगेट रिटर्न (%)",
         "min_score": "न्यूनतम मोमेंटम स्कोर", "logout": "🚪 लॉग आउट", "tab_screener": "🚀 ऑटोमेटेड स्क्रीनर",
@@ -122,8 +122,7 @@ if st.session_state["user"] is None:
             if is_login and st.button(txt["forgot_pwd"], use_container_width=True):
                 st.session_state["auth_mode"] = "forgot"; st.rerun()
     st.stop()
-
-# ================= यूनिफाइड CSS (CSS Variables) =================
+    # ================= शॉर्ट CSS (CSS Variables) =================
 theme_vars = """
     --bg: #f7f9fa; --fg: #111827; --card-bg: #fff; --border: #e2e8f0; --primary: #0066cc;
     --side-bg: #fff; --news-bg: #dbeafe; --news-text: #0066cc; --bullet: #0066cc;
@@ -157,7 +156,7 @@ if news_feed:
     items = "".join([f'<a href="{i["link"]}" target="_blank" class="ticker-item"><span class="ticker-bullet">⚡</span>{i["title"]}</a>' for i in news_feed])
     st.markdown(f'<div class="news-ticker-container"><div class="news-badge">{txt["news_badge"]}</div><div class="ticker-scroll-wrap"><div class="ticker-track">{items}</div></div></div>', unsafe_allow_html=True)
 
-# --- स्टॉक्स और एनालिसिस लॉजिक ---
+# --- स्टॉक्स और टेक्निकल एनालिसिस ---
 MASTER_STOCKS = {
     "RELIANCE": "2885", "TCS": "11536", "HDFCBANK": "1333", "INFY": "1594", "ICICIBANK": "4963",
     "BHARTIARTL": "10604", "SBIN": "3045", "LT": "11483", "ITC": "1660", "TATAMOTORS": "3456",
@@ -220,14 +219,28 @@ def render_chart(df, symbol, target_val, sl_val):
                       legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
     st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': True, 'displayModeBar': False})
 
-# --- हेडर और साइडबार ---
+# --- हेडर (AlphaX Momentum Terminal) ---
 display_user = st.session_state.get('user_name', 'Trader')
 col_head, col_status = st.columns([3, 1])
 with col_head:
-    st.markdown(f"## ⚡ SANDEEP KUMAR `{txt['terminal_title']}`\n{txt['live_feed']} • **{txt['member']}:** {display_user}")
-with col_status:
-    st.markdown(f"<div style='text-align:right;'><span style='background:rgba(16,185,129,0.15);color:#10b981;border:1px solid #10b981;padding:4px 10px;border-radius:15px;font-size:0.75rem;font-weight:700;'>{txt['live_badge']}</span></div>", unsafe_allow_html=True)
+    st.markdown(f"""
+    <div style='display:flex; align-items:center; gap:10px;'>
+        <h2 style='margin:0; font-size:1.85rem; font-weight:900; letter-spacing:-0.5px;'>
+            ⚡ ALPHA<span style='color:{"#0066cc" if is_light else "#38bdf8"};'>X</span> 
+            <span style='color:{"#0066cc" if is_light else "#38bdf8"}; font-size:0.85rem; border:1px solid {"#0066cc" if is_light else "#0284c7"}; padding:2px 10px; border-radius:6px; vertical-align:middle; margin-left:6px;'>
+                {txt['terminal_title']}
+            </span>
+        </h2>
+    </div>
+    <p style='color:{"#64748b" if is_light else "#94a3b8"}; margin:4px 0 0 0; font-size:0.85rem;'>
+        {txt['live_feed']} • {txt['member']}: <span style='font-weight:600;'>{display_user}</span>
+    </p>
+    """, unsafe_allow_html=True)
 
+with col_status:
+    st.markdown(f"<div style='text-align:right; margin-top:8px;'><span style='background:rgba(16,185,129,0.15);color:#10b981;border:1px solid #10b981;padding:4px 12px;border-radius:15px;font-size:0.75rem;font-weight:700;'>{txt['live_badge']}</span></div>", unsafe_allow_html=True)
+
+# --- साइडबार ---
 st.sidebar.markdown(f"**{txt['member']}:** `{display_user}`")
 selected_theme = st.sidebar.selectbox(txt["theme_label"], ["Light", "Dark"], index=0 if is_light else 1)
 selected_lang = st.sidebar.selectbox("🌐 Language", ["English", "Hindi"], index=0 if st.session_state["lang"] == "English" else 1)
@@ -245,7 +258,6 @@ account_capital = st.sidebar.number_input(txt["portfolio_cap"], value=100000, st
 risk_per_trade_pct = st.sidebar.slider(txt["risk_per_trade"], 0.5, 3.0, 1.5, 0.25)
 target_pct_choice = st.sidebar.slider(txt["target_return"], 5, 25, 10, 1)
 min_score = st.sidebar.slider(txt["min_score"], 40, 85, 60, 5)
-
 # --- टैब्स ---
 tab_screener, tab_search = st.tabs([txt["tab_screener"], txt["tab_search"]])
 
