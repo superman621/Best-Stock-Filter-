@@ -10,7 +10,7 @@ from supabase import create_client, Client
 
 # --- पेज सेटअप व स्टेट ---
 st.set_page_config(page_title="AlphaX | Momentum Terminal", page_icon="⚡", layout="wide")
-defaults = {"user": None, "user_name": None, "auth_mode": "login", "lang": "English", "theme_mode": "Dark"}
+defaults = {"user": None, "user_name": None, "auth_mode": "login", "lang": "English", "theme_mode": "Light"}
 for k, v in defaults.items():
     st.session_state.setdefault(k, v)
 
@@ -56,6 +56,7 @@ T = {
 txt = T[st.session_state["lang"]]
 is_light = (st.session_state["theme_mode"] == "Light")
 
+
 # --- टाइमफ्रेम मैपिंग ---
 INTERVAL_MAP = {
     "5m":  ("FIVE_MINUTE", 5),
@@ -63,7 +64,6 @@ INTERVAL_MAP = {
     "1h":  ("ONE_HOUR", 60),
     "1D":  ("ONE_DAY", 180)
 }
-
 # --- मनीकंट्रोल न्यूज़ ---
 @st.cache_data(ttl=120)
 def fetch_moneycontrol_news():
@@ -86,12 +86,10 @@ def load_all_nse_instruments():
         res = requests.get(url, timeout=10)
         data = res.json()
         stocks = {}
-        # Nifty 50 इंडेक्स सबसे पहले जोड़ें
         stocks["NIFTY 50 (INDEX)"] = {"token": "99926000", "exch": "NSE"}
         stocks["BANKNIFTY (INDEX)"] = {"token": "99926009", "exch": "NSE"}
         
         for item in data:
-            # केवल NSE Equity (NSE-EQ) उठाएं
             if item.get("exch_seg") == "NSE" and item.get("symbol", "").endswith("-EQ"):
                 sym = item["symbol"].replace("-EQ", "")
                 stocks[f"{sym} | {item.get('name', '')[:20]}"] = {
@@ -101,7 +99,6 @@ def load_all_nse_instruments():
                 }
         return stocks
     except Exception:
-        # बैकअप लिस्ट यदि नेटवर्क इशू हो
         return {
             "NIFTY 50 (INDEX)": {"token": "99926000", "exch": "NSE"},
             "RELIANCE": {"token": "2885", "exch": "NSE"},
@@ -111,14 +108,37 @@ def load_all_nse_instruments():
         }
 
 ALL_INSTRUMENTS = load_all_nse_instruments()
-# ================= ऑथेंटिकेशन स्क्रीन =================
+
+# ================= ऑथेंटिकेशन स्क्रीन (LIGHT THEME) =================
 if st.session_state["user"] is None:
     st.markdown("""<style>
         #MainMenu, header, footer, [data-testid="stToolbar"], [data-testid="stHeader"] { display: none !important; }
-        .stApp { background: radial-gradient(circle at 50% 20%, rgba(14,165,233,0.15) 0%, rgba(8,10,15,0.95) 70%), #07090e !important; }
-        div[data-testid="stForm"] { background: rgba(17,24,39,0.75)!important; backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 35px; }
-        .stTextInput input { color: #f8fafc !important; }
-        div[data-testid="stFormSubmitButton"] > button { background: linear-gradient(135deg, #0ea5e9, #2563eb) !important; color:#fff !important; border-radius:12px; height:48px; }
+        .stApp { background: radial-gradient(circle at 50% 20%, #eff6ff 0%, #f1f5f9 80%) !important; color: #0f172a !important; }
+        div[data-testid="stForm"] { 
+            background: #ffffff !important; 
+            border: 1px solid #e2e8f0 !important; 
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+            border-radius: 20px; 
+            padding: 35px; 
+        }
+        .stTextInput label, .stSelectbox label { color: #334155 !important; font-weight: 600; }
+        .stTextInput input { 
+            background-color: #f8fafc !important; 
+            color: #0f172a !important; 
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 8px !important;
+        }
+        div[data-testid="stFormSubmitButton"] > button { 
+            background: linear-gradient(135deg, #0284c7, #2563eb) !important; 
+            color: #ffffff !important; 
+            border-radius: 12px; 
+            height: 48px; 
+            font-weight: 700 !important;
+            border: none !important;
+        }
+        div[data-testid="stFormSubmitButton"] > button:hover {
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+        }
     </style>""", unsafe_allow_html=True)
     
     _, col_l = st.columns([4, 1])
@@ -131,7 +151,7 @@ if st.session_state["user"] is None:
         mode = st.session_state["auth_mode"]
         if mode == "forgot":
             with st.form("forgot_form"):
-                st.markdown(f"<h2 style='text-align:center;color:#fff;'>{txt['reset_access']}</h2>", unsafe_allow_html=True)
+                st.markdown(f"<h2 style='text-align:center;color:#0f172a;'>{txt['reset_access']}</h2>", unsafe_allow_html=True)
                 reset_email = st.text_input(txt["email"], placeholder="email@domain.com")
                 if st.form_submit_button(txt["send_reset"], use_container_width=True):
                     try: supabase.auth.reset_password_for_email(reset_email.strip()); st.success("Reset link sent!")
@@ -140,7 +160,7 @@ if st.session_state["user"] is None:
         else:
             is_login = (mode == "login")
             with st.form("auth_form"):
-                st.markdown(f"<h2 style='text-align:center;color:#fff;'>{txt['welcome_back'] if is_login else txt['create_acc']}</h2>", unsafe_allow_html=True)
+                st.markdown(f"<h2 style='text-align:center;color:#0f172a;'>{txt['welcome_back'] if is_login else txt['create_acc']}</h2>", unsafe_allow_html=True)
                 full_name = None if is_login else st.text_input(txt["full_name"], placeholder="Rahul Sharma")
                 email = st.text_input(txt["email"], placeholder="email@domain.com")
                 pwd = st.text_input(txt["password"], type="password", placeholder="••••••••")
@@ -349,7 +369,6 @@ tab_screener, tab_search = st.tabs([txt["tab_screener"], txt["tab_search"]])
 
 with tab_search:
     c_s1, c_s2 = st.columns([3, 1])
-    # भारतीय बाज़ार के सभी 2000+ स्टॉक्स और NIFTY 50 सर्च
     searched_stock = c_s1.selectbox(
         txt["select_asset"], 
         options=list(ALL_INSTRUMENTS.keys()), 
@@ -401,7 +420,6 @@ with tab_screener:
         else:
             with st.spinner(txt["scanning"]):
                 all_results, p_bar = [], st.progress(0)
-                # स्क्रीनर के लिए टॉप लिक्विड स्टॉक्स (Nifty 50 स्टॉक्स)
                 scan_universe = [k for k in ALL_INSTRUMENTS.keys() if "INDEX" not in k][:30]
                 
                 for idx, sym_label in enumerate(scan_universe):
